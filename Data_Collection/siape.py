@@ -63,51 +63,56 @@ def fetch_totals_by_zone_and_period():
                 print(f"Error for zone {zone}, period {start}–{end}: {e}")
     return results
 
-
-def save_multi_metric_pivot_to_excel(results, filename='epgl_metrics_pivot.xlsx'):
+def save_epgl_nren_to_excel(results, filename="epgl_nren_tabella_siape.xlsx"):
     """
-    Crea un pivot table MultiIndex con zone come livello 0,
-    metriche come livello 1, righe ordinati per periodi,
-    e salva su Excel.
+    results: lista di dict con chiavi 'zone', 'period_label' (qui None), 'EPgl_nren'
+    e altri campi; usiamo zone e i periodi in ordine.
     """
-    # Mappa periodi in etichette
-    period_map = {
-        0: 'Prima del 1945',
-        1: '1945 - 1972',
-        2: '1973 - 1991',
-        3: '1992 - 2005',
-        4: '2006 - 2015',
-        5: 'Dopo il 2015'
+    # Mappatura dell'ordine dei periodi alle intestazioni di colonna
+    period_names = {
+        0: 'kE8E9',    # (-1000000000, 1944)
+        1: 'kE10E11',  # (1944, 1972)
+        2: 'kE12E13',  # (1972, 1991)
+        3: 'kE14E15',  # (1991, 2005)
+        4: 'kE16',     # (2005, 2015)
+        5: 'k2015',    # (2015, 1000000000)
     }
-    # Ricostruiamo periodi ciclando
-    periods = list(period_map.values())
-    # Aggiungiamo period_label secondo l'ordine inserito in results
-    labeled = []
-    for i, record in enumerate(results):
-        # period index = i mod len(periods)
-        period_idx = i % len(periods)
-        rec = record.copy()
-        rec['period_label'] = period_map[period_idx]
-        labeled.append(rec)
-    df = pd.DataFrame(labeled)
-    # Pivot table multiindice colonne
-    pivot = df.pivot_table(
-        index='period_label',
-        columns='zone',
-        values=['EPgl_nren', 'EPgl_ren', 'CO2']
-    )
-    # Swappa per avere zone come primo livello e metriche secondo
-    pivot = pivot.swaplevel(0,1, axis=1)
-    pivot.sort_index(axis=1, level=0, inplace=True)
-    # Imposta nomi
-    pivot.index.name = 'Periodo di costruzione'
-    pivot.columns.names = ['Zona climatica', 'Metrica']
-    # Ordine righe
-    pivot = pivot.reindex(periods)
-    # Salva
-    pivot.to_excel(filename)
-    print(f"File salvato: {filename}")
+
+    # Aggiungiamo un indice "period_index" basato sulla posizione nella lista results
+    # (dato che period_label è None)
+    # Assumiamo che i risultati siano in ordine sezionale: per ogni zone, i 6 periodi in sequenza.
+    enriched = []
+    counts_by_zone = {}
+    for row in results:
+        zone = row['zone']
+        counts_by_zone.setdefault(zone, 0)
+        idx = counts_by_zone[zone]
+        counts_by_zone[zone] += 1
+
+        enriched.append({
+            'zona_climatica': zone,
+            'period_index': idx,
+            'EPgl_nren': row['EPgl_nren']
+        })
+
+    # Costruiamo DataFrame e facciamo il pivot
+    df = pd.DataFrame(enriched)
+    pivot = df.pivot(index='zona_climatica',
+                     columns='period_index',
+                     values='EPgl_nren')
+
+    # Rinominiamo le colonne
+    pivot = pivot.rename(columns=period_names)
+
+    # Assicuriamoci che tutte le colonne siano nell'ordine desiderato
+    ordered_cols = [period_names[i] for i in range(len(period_names))]
+    pivot = pivot[ordered_cols]
+
+    # Scriviamo in Excel
+    pivot.to_excel(filename, index=True, index_label='zona_climatica')
+
+    print(f"File salvato come {filename}")
 
 if __name__ == '__main__':
     data = fetch_totals_by_zone_and_period()
-    save_multi_metric_pivot_to_excel(data)
+    save_epgl_nren_to_excel(data)
