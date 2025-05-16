@@ -1,6 +1,7 @@
 from playwright.sync_api import sync_playwright
 from bs4 import BeautifulSoup
 import pandas as pd
+import os
 
 # URL decreto principale
 atto_url = "https://www.normattiva.it/uri-res/N2Ls?urn:nir:presidente.repubblica:decreto:1993-08-26;412"
@@ -14,11 +15,11 @@ with sync_playwright() as p:
     browser = p.chromium.launch(headless=True)
     page = browser.new_page()
 
-    # 1️⃣ carico la pagina del decreto (crea la sessione server-side)
+    # 1️⃣ Carica la pagina del decreto (necessaria per avviare la sessione server-side)
     print(f"📝 Caricamento atto principale: {atto_url}")
     page.goto(atto_url)
 
-    # 2️⃣ ora posso accedere agli articoli
+    # 2️⃣ Ora accedi agli articoli
     for progressivo in range(1, 5):
         url = base_articolo_url + str(progressivo)
         print(f"\n👉 Scaricando dati da: {url}")
@@ -61,16 +62,21 @@ with sync_playwright() as p:
 
     browser.close()
 
-# Scrittura su Excel
+# Scrittura su CSV nella cartella Table
 if dati_finali:
+    # Creazione cartella Table se non esiste
+    output_dir = "Table"
+    os.makedirs(output_dir, exist_ok=True)
+
     records = []
     for riga in dati_finali:
         colonne = riga.split()
         record = colonne[:4] + [' '.join(colonne[4:])]
         records.append(record)
 
+    output_path = os.path.join(output_dir, 'dati_normattiva_playwright_finale.csv')
     df = pd.DataFrame(records, columns=["Provincia", "Zona", "GradiGiorno", "Altitudine", "Comune"])
-    df.to_excel('dati_normattiva_playwright_finale.xlsx', index=False)
-    print("\n📑 Dati salvati in 'dati_normattiva_playwright_finale.xlsx'")
+    df.to_csv(output_path, index=False, sep=";")
+    print(f"\n📑 Dati salvati in '{output_path}'")
 else:
     print("\n⚠️ Nessun dato trovato.")
