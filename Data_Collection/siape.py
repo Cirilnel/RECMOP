@@ -1,5 +1,6 @@
 import requests
 import pandas as pd
+import os
 
 def fetch_totals_by_zone_and_period():
     url = 'https://siape.enea.it/api/v1/aggr-data'
@@ -65,8 +66,7 @@ def fetch_totals_by_zone_and_period():
 
 def save_epgl_nren_to_excel(results, filename="epgl_nren_tabella_siape.xlsx"):
     """
-    results: lista di dict con chiavi 'zone', 'period_label' (qui None), 'EPgl_nren'
-    e altri campi; usiamo zone e i periodi in ordine.
+    Salva i dati EPgl_nren in un file Excel nella cartella 'Table'.
     """
     # Mappatura dell'ordine dei periodi alle intestazioni di colonna
     period_names = {
@@ -79,8 +79,6 @@ def save_epgl_nren_to_excel(results, filename="epgl_nren_tabella_siape.xlsx"):
     }
 
     # Aggiungiamo un indice "period_index" basato sulla posizione nella lista results
-    # (dato che period_label è None)
-    # Assumiamo che i risultati siano in ordine sezionale: per ogni zone, i 6 periodi in sequenza.
     enriched = []
     counts_by_zone = {}
     for row in results:
@@ -108,10 +106,17 @@ def save_epgl_nren_to_excel(results, filename="epgl_nren_tabella_siape.xlsx"):
     ordered_cols = [period_names[i] for i in range(len(period_names))]
     pivot = pivot[ordered_cols]
 
-    # Scriviamo in Excel
-    pivot.to_excel(filename, index=True, index_label='zona_climatica')
+    # Creiamo la cartella Table se non esiste
+    output_dir = "Table"
+    os.makedirs(output_dir, exist_ok=True)
 
-    print(f"File salvato come {filename}")
+    # Percorso finale del file
+    output_path = os.path.join(output_dir, filename)
+
+    # Scriviamo in Excel
+    pivot.to_excel(output_path, index=True, index_label='zona_climatica')
+
+    print(f"📑 File salvato come {output_path}")
 
 if __name__ == '__main__':
     data = fetch_totals_by_zone_and_period()
