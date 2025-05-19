@@ -1,69 +1,68 @@
-from dbfread import DBF
-import pandas as pd
 import os
+import logging
+from typing import List, Dict
+import pandas as pd
+from dbfread import DBF
 
-def estrai_dati_basi_territoriali(dbf_path):
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Costanti
+DBF_PATH = os.path.join('..', 'Istat', 'Regioni', 'Campania', 'R15_11_WGS84.dbf')
+OUTPUT_DIR = "Table"
+OUTPUT_FILENAME = "basi_territoriali_R15_Campania.csv"
+CAMPI_ESTRATTI = ['COD_REG', 'COD_ISTAT', 'PRO_COM', 'SEZ2011', 'SEZ', 'COD_LOC', 'TIPO_LOC']
+
+
+def estrai_dati_basi_territoriali(percorso_dbf: str) -> List[Dict[str, int]]:
     """
-    Estrae dal file DBF di input le colonne specificate e le restituisce come lista di dizionari.
+    Estrae dal file DBF i campi specificati.
 
-    Parametri:
-        dbf_path (str): percorso al file .dbf da cui estrarre i dati.
+    Args:
+        percorso_dbf: Percorso al file .dbf.
 
-    Ritorna:
-        list of dict: ogni dizionario contiene le chiavi:
-            - COD_REG
-            - COD_ISTAT
-            - PRO_COM
-            - SEZ2011
-            - SEZ
-            - COD_LOC
-            - TIPO_LOC
+    Returns:
+        Lista di dizionari con i valori interi estratti.
     """
-    fields = ['COD_REG', 'COD_ISTAT', 'PRO_COM', 'SEZ2011', 'SEZ', 'COD_LOC', 'TIPO_LOC']
-    table = DBF(dbf_path, load=True, ignorecase=True, recfactory=dict)
+    table = DBF(percorso_dbf, load=True, ignorecase=True, recfactory=dict)
     records = []
+
     for record in table:
-        row = {field: record.get(field) for field in fields}
-        records.append(row)
+        riga = {campo: record.get(campo) for campo in CAMPI_ESTRATTI}
+        records.append(riga)
+
     return records
 
 
-def salva_csv(records, output_csv_path):
+def salva_dati_basi_territoriali(records: List[Dict[str, int]], output_csv_path: str) -> pd.DataFrame:
     """
-    Scrive la lista di dizionari in un file CSV, forzando i valori interi senza decimali.
+    Salva i dati in formato CSV, forzando le colonne a interi.
 
-    Parametri:
-        records (list of dict): dati estratti dalla funzione extract_columns.
-        output_csv_path (str): percorso di destinazione del file CSV.
+    Args:
+        records: Lista di dizionari estratti dal DBF.
+        output_csv_path: Percorso del file CSV di output.
     """
     os.makedirs(os.path.dirname(output_csv_path), exist_ok=True)
-
-    # Crea il DataFrame
     df = pd.DataFrame(records)
-
-    # Forza tutte le colonne a intero (int64)
-    df = df.astype({col: 'int64' for col in df.columns})
-
-    # Esporta in CSV usando punto e virgola come separatore
+    #df = df.astype('int64')
     df.to_csv(output_csv_path, index=False, sep=';')
+    logger.info(f"Dati salvati in: {output_csv_path}")
 
-def get_dati_basi_territoriali():
+    return df
+
+
+def run_estrazione_basi_territoriali() -> pd.DataFrame:
     """
-    Funzione principale per l'estrazione dei dati delle basi territoriali.
+    Funzione principale per estrarre e salvare i dati delle basi territoriali.
     """
-    dbf_path = os.path.join('..', 'Istat', 'Regioni', 'Campania', 'R15_11_WGS84.dbf')
-    output_csv_path = os.path.join('Table', 'basi_territoriali_R15_Campania.csv')
+    dati = estrai_dati_basi_territoriali(DBF_PATH)
+    output_path = os.path.join(OUTPUT_DIR, OUTPUT_FILENAME)
+    df = salva_dati_basi_territoriali(dati, output_path)
+    logger.info(f"Esportazione completata: {len(dati)} record scritti.")
 
-    dati = estrai_dati_basi_territoriali(dbf_path)
-    salva_csv(dati, output_csv_path)
+    return df
 
-    print(f"Esportazione completata: {len(dati)} record scritti in {output_csv_path}")
 
 if __name__ == '__main__':
-    dbf_path = os.path.join('..', 'Istat', 'Regioni', 'Campania', 'R15_11_WGS84.dbf')
-    output_csv_path = os.path.join('Table', 'basi_territoriali_R15_Campania.csv')
-
-    dati = estrai_dati_basi_territoriali(dbf_path)
-    salva_csv(dati, output_csv_path)
-
-    print(f"Esportazione completata: {len(dati)} record scritti in {output_csv_path}")
+    run_estrazione_basi_territoriali()
