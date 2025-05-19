@@ -2,7 +2,7 @@ import requests
 import pandas as pd
 import os
 
-def fetch_totals_by_zone_and_period():
+def estrai_dati_siape():
     url = 'https://siape.enea.it/api/v1/aggr-data'
 
     headers = {
@@ -37,7 +37,7 @@ def fetch_totals_by_zone_and_period():
 
     for zone in zones:
         for start, end in periods:
-            data = {
+            payload = {
                 'group[]': 'claen',
                 'where[destuso]': '0',
                 'where[annoc][range][]': [str(start), str(end)],
@@ -45,79 +45,79 @@ def fetch_totals_by_zone_and_period():
                 'nofilter': 'false',
             }
             try:
-                resp = requests.post(url, headers=headers, data=data)
+                resp = requests.post(url, headers=headers, data=payload)
                 resp.raise_for_status()
                 js = resp.json()
                 total = js.get('total', [])
                 results.append({
                     'zone': zone,
-                    'period_label': None,
+                    'period_label': f"{start}-{end}",
                     'EPgl_nren': total[1] if len(total) > 1 else None,
                     'EPgl_ren': total[2] if len(total) > 2 else None,
                     'CO2': total[3] if len(total) > 3 else None,
                 })
-
                 print(f"[OK] Zone {zone}, anni {start}–{end}: EPgl_nren={results[-1]['EPgl_nren']}, "
                       f"EPgl_ren={results[-1]['EPgl_ren']}, CO2={results[-1]['CO2']}")
-
             except Exception as e:
                 print(f"Error for zone {zone}, period {start}–{end}: {e}")
     return results
 
-def save_epgl_nren_to_excel(results, filename="epgl_nren_tabella_siape.xlsx"):
+
+def salva_csv(results, filename="epgl_nren_tabella_siape.csv", sep=';'):
     """
-    Salva i dati EPgl_nren in un file Excel nella cartella 'Table'.
+    Salva i dati EPgl_nren in un file CSV nella cartella 'Table'.
+    Usa come separatore il carattere specificato (default ';') per compatibilità con Excel locale.
     """
-    # Mappatura dell'ordine dei periodi alle intestazioni di colonna
     period_names = {
-        0: 'kE8E9',    # (-1000000000, 1944)
-        1: 'kE10E11',  # (1944, 1972)
-        2: 'kE12E13',  # (1972, 1991)
-        3: 'kE14E15',  # (1991, 2005)
-        4: 'kE16',     # (2005, 2015)
-        5: 'k2015',    # (2015, 1000000000)
+        0: 'kE8E9',
+        1: 'kE10E11',
+        2: 'kE12E13',
+        3: 'kE14E15',
+        4: 'kE16',
+        5: 'k2015',
     }
 
-    # Aggiungiamo un indice "period_index" basato sulla posizione nella lista results
     enriched = []
     counts_by_zone = {}
     for row in results:
         zone = row['zone']
-        counts_by_zone.setdefault(zone, 0)
-        idx = counts_by_zone[zone]
-        counts_by_zone[zone] += 1
-
+        idx = counts_by_zone.get(zone, 0)
+        counts_by_zone[zone] = idx + 1
         enriched.append({
             'zona_climatica': zone,
             'period_index': idx,
             'EPgl_nren': row['EPgl_nren']
         })
 
-    # Costruiamo DataFrame e facciamo il pivot
     df = pd.DataFrame(enriched)
-    pivot = df.pivot(index='zona_climatica',
-                     columns='period_index',
-                     values='EPgl_nren')
-
-    # Rinominiamo le colonne
+    pivot = df.pivot(index='zona_climatica', columns='period_index', values='EPgl_nren')
     pivot = pivot.rename(columns=period_names)
-
-    # Assicuriamoci che tutte le colonne siano nell'ordine desiderato
     ordered_cols = [period_names[i] for i in range(len(period_names))]
     pivot = pivot[ordered_cols]
 
-    # Creiamo la cartella Table se non esiste
     output_dir = "Table"
     os.makedirs(output_dir, exist_ok=True)
-
-    # Percorso finale del file
     output_path = os.path.join(output_dir, filename)
 
-    # Scriviamo in Excel
-    pivot.to_excel(output_path, index=True, index_label='zona_climatica')
+    # Scriviamo in CSV con header esplicito e label dell'indice
+    pivot.to_csv(output_path,
+                 sep=sep,
+                 index=True,
+                 index_label='zona_climatica',
+                 header=True,
+                 encoding='utf-8')
 
-    print(f"📑 File salvato come {output_path}")
+    print(f"File salvato come {output_path} separato da '{sep}'")
+
+def get_dati_siape():
+    """
+    Funzione principale per l'estrazione dei dati EPgl_nren da SIAPE.
+    """
+    data = estrai_dati_siape()
+    salva_csv(data)
+    print(f"Esportazione completata: {len(data)} record scritti in epgl_nren_tabella_siape.csv")
+
 
 if __name__ == '__main__':
-    data = fetch_totals_by_zone_and_period()
-    save_epgl_nren_to_excel(data)
+    data = estrai_dati_siape()
+    salva_csv(data)

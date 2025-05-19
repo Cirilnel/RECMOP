@@ -1,0 +1,9 @@
+from Data_Collection.estrazione_dati_basi_territoriali import get_dati_basi_territoriali
+from Data_Collection.estrazione_dati_variabili_censuarie import get_dati_variabili_censuarie
+from Data_Collection.normattiva import get_dati_normattiva
+from Data_Collection.siape import get_dati_siape
+
+get_dati_siape()
+get_dati_normattiva()
+get_dati_basi_territoriali()
+get_dati_variabili_censuarie()

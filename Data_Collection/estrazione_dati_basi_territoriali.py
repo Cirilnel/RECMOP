@@ -2,7 +2,7 @@ from dbfread import DBF
 import pandas as pd
 import os
 
-def extract_columns(dbf_path):
+def estrai_dati_basi_territoriali(dbf_path):
     """
     Estrae dal file DBF di input le colonne specificate e le restituisce come lista di dizionari.
 
@@ -19,43 +19,51 @@ def extract_columns(dbf_path):
             - COD_LOC
             - TIPO_LOC
     """
-    # Campi da estrarre
     fields = ['COD_REG', 'COD_ISTAT', 'PRO_COM', 'SEZ2011', 'SEZ', 'COD_LOC', 'TIPO_LOC']
-    # Carica il DBF, ignorando il case delle colonne
     table = DBF(dbf_path, load=True, ignorecase=True, recfactory=dict)
     records = []
     for record in table:
-        # Estrae solo i campi d'interesse
         row = {field: record.get(field) for field in fields}
         records.append(row)
     return records
 
 
-def write_to_excel(records, output_excel_path):
+def salva_csv(records, output_csv_path):
     """
-    Scrive la lista di dizionari in un file Excel.
+    Scrive la lista di dizionari in un file CSV, forzando i valori interi senza decimali.
 
     Parametri:
         records (list of dict): dati estratti dalla funzione extract_columns.
-        output_excel_path (str): percorso di destinazione del file Excel.
+        output_csv_path (str): percorso di destinazione del file CSV.
     """
-    # Crea la cartella di destinazione se non esiste
-    os.makedirs(os.path.dirname(output_excel_path), exist_ok=True)
+    os.makedirs(os.path.dirname(output_csv_path), exist_ok=True)
 
-    # Crea un DataFrame e lo esporta in Excel
+    # Crea il DataFrame
     df = pd.DataFrame(records)
-    df.to_excel(output_excel_path, index=False)
 
+    # Forza tutte le colonne a intero (int64)
+    df = df.astype({col: 'int64' for col in df.columns})
+
+    # Esporta in CSV usando punto e virgola come separatore
+    df.to_csv(output_csv_path, index=False, sep=';')
+
+def get_dati_basi_territoriali():
+    """
+    Funzione principale per l'estrazione dei dati delle basi territoriali.
+    """
+    dbf_path = os.path.join('..', 'Istat', 'Regioni', 'Campania', 'R15_11_WGS84.dbf')
+    output_csv_path = os.path.join('Table', 'basi_territoriali_R15_Campania.csv')
+
+    dati = estrai_dati_basi_territoriali(dbf_path)
+    salva_csv(dati, output_csv_path)
+
+    print(f"Esportazione completata: {len(dati)} record scritti in {output_csv_path}")
 
 if __name__ == '__main__':
-    # Percorso file DBF
     dbf_path = os.path.join('..', 'Istat', 'Regioni', 'Campania', 'R15_11_WGS84.dbf')
+    output_csv_path = os.path.join('Table', 'basi_territoriali_R15_Campania.csv')
 
-    # Percorso di destinazione dentro la cartella Table
-    output_excel_path = os.path.join('Table', 'basi_territoriali_R15_Campania.xlsx')
+    dati = estrai_dati_basi_territoriali(dbf_path)
+    salva_csv(dati, output_csv_path)
 
-    # Estrazione e scrittura
-    dati = extract_columns(dbf_path)
-    write_to_excel(dati, output_excel_path)
-
-    print(f"✅ Esportazione completata: {len(dati)} record scritti in {output_excel_path}")
+    print(f"Esportazione completata: {len(dati)} record scritti in {output_csv_path}")
