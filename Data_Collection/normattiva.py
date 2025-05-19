@@ -3,80 +3,97 @@ from bs4 import BeautifulSoup
 import pandas as pd
 import os
 
-# URL decreto principale
-atto_url = "https://www.normattiva.it/uri-res/N2Ls?urn:nir:presidente.repubblica:decreto:1993-08-26;412"
+def estrai_dati_normattiva():
+    atto_url = "https://www.normattiva.it/uri-res/N2Ls?urn:nir:presidente.repubblica:decreto:1993-08-26;412"
+    base_articolo_url = (
+        "https://www.normattiva.it/atto/caricaArticolo?"
+        "art.versione=46&art.idGruppo=0&art.flagTipoArticolo=1&"
+        "art.codiceRedazionale=093G0451&art.idArticolo=1&"
+        "art.idSottoArticolo=1&art.idSottoArticolo1=10&"
+        "art.dataPubblicazioneGazzetta=1993-10-14&art.progressivo="
+    )
+    numero_articoli = 4
+    dati_finali = []
 
-# URL base articoli
-base_articolo_url = "https://www.normattiva.it/atto/caricaArticolo?art.versione=46&art.idGruppo=0&art.flagTipoArticolo=1&art.codiceRedazionale=093G0451&art.idArticolo=1&art.idSottoArticolo=1&art.idSottoArticolo1=10&art.dataPubblicazioneGazzetta=1993-10-14&art.progressivo="
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
 
-dati_finali = []
+        print(f"Caricamento atto principale: {atto_url}")
+        page.goto(atto_url)
 
-with sync_playwright() as p:
-    browser = p.chromium.launch(headless=True)
-    page = browser.new_page()
+        for progressivo in range(1, numero_articoli + 1):
+            url = base_articolo_url + str(progressivo)
+            print(f"\nScaricando dati da: {url}")
 
-    # 1️⃣ Carica la pagina del decreto (necessaria per avviare la sessione server-side)
-    print(f"📝 Caricamento atto principale: {atto_url}")
-    page.goto(atto_url)
+            page.goto(url)
+            content = page.content()
+            soup = BeautifulSoup(content, 'html.parser')
+            testo = soup.get_text(separator="\n")
 
-    # 2️⃣ Ora accedi agli articoli
-    for progressivo in range(1, 5):
-        url = base_articolo_url + str(progressivo)
-        print(f"\n👉 Scaricando dati da: {url}")
+            if progressivo == 1:
+                start_index = testo.find("pr z gr-g alt comune")
+            else:
+                start_index = testo.find("Testo in vigore dal")
+                if start_index != -1:
+                    start_index = testo.find("\n", start_index)
 
-        page.goto(url)
-        content = page.content()
-
-        soup = BeautifulSoup(content, 'html.parser')
-        testo = soup.get_text(separator="\n")
-        print(f"📜 Primi 500 caratteri:\n{testo[:500]}")
-
-        if progressivo == 1:
-            start_index = testo.find("pr z gr-g alt comune")
-            print(f"🔍 progressivo 1 — posizione 'pr z gr-g alt comune': {start_index}")
-        else:
-            start_index = testo.find("Testo in vigore dal")
             if start_index != -1:
-                start_index = testo.find("\n", start_index)
+                dati_grezzi = testo[start_index:].strip().split("\n")
 
-        if start_index != -1:
-            dati_grezzi = testo[start_index:].strip().split("\n")
-            print(f"📦 Righe trovate ({len(dati_grezzi)}): {dati_grezzi[:10]}")
-
-            dati_puliti = []
-            for riga in dati_grezzi:
-                if progressivo == 1 and "pr z gr-g alt comune" in riga:
-                    continue
-                if (riga.strip() == "" or
+                dati_puliti = []
+                for riga in dati_grezzi:
+                    if progressivo == 1 and "pr z gr-g alt comune" in riga:
+                        continue
+                    if (riga.strip() == "" or
                         "parte" in riga.lower() or
                         "aggiornamenti" in riga.lower() or
                         "Testo in vigore" in riga or
                         "articolo precedente" in riga.lower() or
                         "articolo successivo" in riga.lower()):
-                    continue
-                dati_puliti.append(riga.strip())
+                        continue
+                    dati_puliti.append(riga.strip())
 
-            dati_finali.extend(dati_puliti)
-        else:
-            print(f"❌ Nessun dato trovato nella pagina {progressivo}")
+                dati_finali.extend(dati_puliti)
+            else:
+                print(f"Nessun dato trovato nella pagina {progressivo}")
 
-    browser.close()
+        browser.close()
 
-# Scrittura su CSV nella cartella Table
-if dati_finali:
-    # Creazione cartella Table se non esiste
-    output_dir = "Table"
+    return dati_finali
+
+
+def salva_csv(dati, output_dir, nome_file_output):
+    if not dati:
+        print("Nessun dato da scrivere.")
+        return
+
     os.makedirs(output_dir, exist_ok=True)
-
     records = []
-    for riga in dati_finali:
+    for riga in dati:
         colonne = riga.split()
         record = colonne[:4] + [' '.join(colonne[4:])]
         records.append(record)
 
-    output_path = os.path.join(output_dir, 'dati_normattiva_playwright_finale.csv')
+    output_path = os.path.join(output_dir, nome_file_output)
     df = pd.DataFrame(records, columns=["Provincia", "Zona", "GradiGiorno", "Altitudine", "Comune"])
-    df.to_csv(output_path, index=False, sep=";")
-    print(f"\n📑 Dati salvati in '{output_path}'")
-else:
-    print("\n⚠️ Nessun dato trovato.")
+    df.to_csv(output_path, index=False, sep=";", encoding="utf-8-sig")
+    print(f"Dati salvati in '{output_path}'")
+
+def get_dati_normattiva():
+    """
+    Funzione principale per l'estrazione dei dati da Normattiva.
+    """
+    output_dir = "Table"
+    nome_file_output = "dati_normattiva_playwright_finale.csv"
+
+    dati = estrai_dati_normattiva()
+    salva_csv(dati, output_dir, nome_file_output)
+    print(f"Esportazione completata: {len(dati)} record scritti in {output_dir}/{nome_file_output}")
+
+if __name__ == "__main__":
+    output_dir = "Table"
+    nome_file_output = "dati_normattiva_playwright_finale.csv"
+
+    dati = estrai_dati_normattiva()
+    salva_csv(dati, output_dir, nome_file_output)
