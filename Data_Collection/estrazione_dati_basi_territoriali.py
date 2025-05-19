@@ -45,7 +45,7 @@ def salva_dati_basi_territoriali(records: List[Dict[str, int]], output_csv_path:
     """
     os.makedirs(os.path.dirname(output_csv_path), exist_ok=True)
     df = pd.DataFrame(records)
-    #df = df.astype('int64')
+    df = df.astype('int64')
     df.to_csv(output_csv_path, index=False, sep=';')
     logger.info(f"Dati salvati in: {output_csv_path}")
 

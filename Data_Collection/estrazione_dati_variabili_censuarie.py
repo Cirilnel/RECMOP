@@ -36,7 +36,14 @@ def estrai_dati_variabili_censuarie(percorso_file: str, sep: str = ';', encoding
     if colonne_mancanti:
         logger.warning(f"Colonne mancanti nel CSV: {colonne_mancanti}")
 
-    return df[colonne_presenti]
+    df_result = df[colonne_presenti]
+
+    # Conversione di SEZ2011 a int64 se presente
+    if 'SEZ2011' in df_result.columns:
+        df_result['SEZ2011'] = df_result['SEZ2011'].astype('int64')
+
+    return df_result
+
 
 
 def salva_dati_variabili_censuarie(df: pd.DataFrame, cartella_output: str, nome_file: str,
