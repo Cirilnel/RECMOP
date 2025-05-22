@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 INPUT_PATH = os.path.join("..", "Istat", "Variabili_Censuarie", "Sezioni_di_Censimento", "Campania.csv")
 OUTPUT_DIR = "../Data_Collection/csv_tables-fase1"
 OUTPUT_FILENAME = "variabili_censuarie_R15_campania.csv"
-COLONNE_RICHIESTE = ['SEZ2011', 'COMUNE', 'P1', 'E8', 'E9', 'E10', 'E11', 'E12', 'E13', 'E14', 'E15', 'E16', 'A44']
+COLONNE_RICHIESTE = ['SEZ2011', 'COMUNE', 'PROVINCIA', 'P1', 'E8', 'E9', 'E10', 'E11', 'E12', 'E13', 'E14', 'E15', 'E16', 'A44']
 
 
 def estrai_dati_variabili_censuarie(percorso_file: str, sep: str = ';', encoding: str = 'latin-1') -> pd.DataFrame:
@@ -46,7 +46,7 @@ def estrai_dati_variabili_censuarie(percorso_file: str, sep: str = ';', encoding
 
 
 def salva_dati_variabili_censuarie(df: pd.DataFrame, cartella_output: str, nome_file: str,
-                                    sep: str = ';', encoding: str = 'utf-8') -> None:
+                                    sep: str = ';', encoding: str = 'utf-8-sig') -> None:
     """
     Salva un DataFrame in formato CSV.
 

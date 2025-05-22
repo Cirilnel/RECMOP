@@ -136,11 +136,12 @@ def get_dataframe_normattiva(dati: List[str]) -> pd.DataFrame:
             righe_scartate += 1
             logger.debug(f"Riga scartata (formato non valido): {riga}")
 
-    df = pd.DataFrame(records, columns=["Provincia", "Zona", "GradiGiorno", "Altitudine", "Comune"])
+    df = pd.DataFrame(records, columns=["PROVINCIA", "ZONA_CLIMATICA", "GRADI_GIORNO", "ALTITUDINE", "COMUNE"])
 
     logger.info(f"Totale righe scartate: {righe_scartate}")
 
     return df
+
 
 def run_estrazione_normattiva() -> pd.DataFrame:
     """
@@ -149,8 +150,10 @@ def run_estrazione_normattiva() -> pd.DataFrame:
     dati = estrai_dati_normattiva()
     df = salva_dati_normattiva(dati)
     logger.info(f"Esportazione completata: {len(dati)} record scritti.")
+
     return df
 
 
 if __name__ == "__main__":
     run_estrazione_normattiva()
+
