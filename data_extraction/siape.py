@@ -4,6 +4,9 @@ from typing import List, Dict
 import requests
 import pandas as pd
 
+# Import combinazioni da saltare
+from combinazioni_da_saltare import COMBINAZIONI_DA_SALTARE
+
 # Impostazione logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -48,93 +51,121 @@ HEADERS = {
     'X-Requested-With': 'XMLHttpRequest',
 }
 
-
 def estrai_dati_siape() -> List[Dict[str, str]]:
-    """
-    Estrae i dati aggregati EPgl_nren da SIAPE per ogni zona climatica e periodo.
-
-    Returns:
-        List[Dict]: Lista di dizionari con i dati per ciascuna zona e periodo.
-    """
     risultati = []
 
+    SURIS_RANGES = [
+        (-1000000000, 50), (50, 100), (100, 200),
+        (200, 500), (500, 1000), (1000, 5000), (5000, 1000000000)
+    ]
+    VOLRIS_RANGES = [
+        (-1000000000, 50), (50, 100), (100, 200),
+        (200, 500), (500, 1000), (1000, 5000),
+        (5000, 10000), (10000, 1000000000)
+    ]
+    SUPDI_RANGES = [
+        (-1000000000, 50), (50, 100), (100, 200),
+        (200, 500), (500, 1000), (1000, 5000), (5000, 1000000000)
+    ]
+
     for zona in ZONES:
-        for inizio, fine in PERIODS:
-            payload = {
-                'group[]': 'claen',
-                'where[destuso]': '0',
-                'where[annoc][range][]': [str(inizio), str(fine)],
-                'where[zoncli][]': zona,
-                'nofilter': 'false',
-            }
-            try:
-                response = requests.post(URL_SIAPE, headers=HEADERS, data=payload)
-                response.raise_for_status()
-                json_data = response.json()
-                total = json_data.get('total', [])
+        for idx, (inizio, fine) in enumerate(PERIODS):
+            periodo_label = PERIOD_LABELS.get(idx, f"{inizio}-{fine}")
 
-                risultati.append({
-                    'zona': zona,
-                    'periodo': f"{inizio}-{fine}",
-                    'EPgl_nren': total[1] if len(total) > 1 else None,
-                    'EPgl_ren': total[2] if len(total) > 2 else None,
-                    'CO2': total[3] if len(total) > 3 else None,
-                })
+            for suris_min, suris_max in SURIS_RANGES:
+                for volris_min, volris_max in VOLRIS_RANGES:
+                    for supdi_min, supdi_max in SUPDI_RANGES:
 
-                logger.info(f"[OK] Zona {zona}, anni {inizio}–{fine}: "
-                            f"EPgl_nren={risultati[-1]['EPgl_nren']}, "
-                            f"EPgl_ren={risultati[-1]['EPgl_ren']}, CO2={risultati[-1]['CO2']}")
+                        suris_str = format_range(suris_min, suris_max)
+                        volris_str = format_range(volris_min, volris_max)
+                        supdi_str = format_range(supdi_min, supdi_max)
 
-            except Exception as e:
-                logger.warning(f"[ERRORE] Zona {zona}, anni {inizio}–{fine}: {e}")
+                        combinazione_corrente = (
+                            zona, periodo_label, suris_str, volris_str, supdi_str
+                        )
+
+                        if combinazione_corrente in COMBINAZIONI_DA_SALTARE:
+                            logger.info(f"[SKIP] Saltata combinazione {combinazione_corrente}")
+                            continue
+
+                        payload = {
+                            'group[]': 'claen',
+                            'where[destuso]': '0',
+                            'where[annoc][range][]': [str(inizio), str(fine)],
+                            'where[zoncli][]': zona,
+                            'where[suris][range][]': [str(suris_min), str(suris_max)],
+                            'where[volris][range][]': [str(volris_min), str(volris_max)],
+                            'where[supdi][range][]': [str(supdi_min), str(supdi_max)],
+                            'nofilter': 'false',
+                        }
+
+                        try:
+                            response = requests.post(URL_SIAPE, headers=HEADERS, data=payload)
+                            response.raise_for_status()
+                            json_data = response.json()
+                            total = json_data.get('total', [])
+
+                            risultati.append({
+                                'zona': zona,
+                                'periodo': periodo_label,
+                                'suris': suris_str,
+                                'volris': volris_str,
+                                'supdi': supdi_str,
+                                'EPgl_nren': total[1] if len(total) > 1 else None,
+                                'EPgl_ren': total[2] if len(total) > 2 else None,
+                                'CO2': total[3] if len(total) > 3 else None,
+                            })
+
+                            logger.info(f"[OK] Zona {zona}, periodo {periodo_label}, "
+                                        f"SURIS {suris_str}, VOLRIS {volris_str}, "
+                                        f"SUPDI {supdi_str}: EPgl_nren={total[1] if len(total) > 1 else 'N/D'}")
+
+                        except Exception as e:
+                            logger.warning(f"[ERRORE] Zona {zona}, periodo {periodo_label}, "
+                                           f"SURIS {suris_str}, VOLRIS {volris_str}, "
+                                           f"SUPDI {supdi_str}: {e}")
 
     return risultati
 
 
-def salva_dati_siape(dati: List[Dict[str, str]], filename: str = OUTPUT_FILENAME, sep: str = ";") -> pd.DataFrame:
-    """
-    Salva i dati EPgl_nren in un file CSV pivotato per zona climatica e periodo.
+def format_range(min_val: int, max_val: int) -> str:
+    if min_val == -1000000000:
+        return f"<{max_val}"
+    elif max_val == 1000000000:
+        return f">{min_val}"
+    else:
+        return f"{min_val}-{max_val}"
 
-    Args:
-        filename: Nome del file di output.
-        sep: Separatore per il CSV.
-        dati: Lista di dizionari con i dati da salvare.
-    """
-    tabella = get_dataframe_siape(dati)
+
+def salva_dati_siape(dati: List[Dict[str, str]], filename: str = OUTPUT_FILENAME, sep: str = ";") -> pd.DataFrame:
+    df = get_dataframe_siape(dati)
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     percorso_output = os.path.join(OUTPUT_DIR, filename)
-    tabella.to_csv(percorso_output, sep=sep, index=True, index_label='zona_climatica', encoding='utf-8')
+    df.to_csv(percorso_output, sep=sep, index=False, encoding='utf-8')
 
     logger.info(f"Dati salvati in: {percorso_output}")
 
-    return tabella
+    return df
+
 
 def get_dataframe_siape(dati: List[Dict[str, str]]) -> pd.DataFrame:
     valori = []
-    contatori = {}
 
     for riga in dati:
-        zona = riga['zona']
-        indice = contatori.get(zona, 0)
-        contatori[zona] = indice + 1
-
         valori.append({
-            'zona_climatica': zona,
-            'indice_periodo': indice,
+            'zona_climatica': riga['zona'],
+            'periodo': riga['periodo'],
+            'Superficie Utile Riscaldata': riga['suris'],
+            'Volume Lordo Riscaldato': riga['volris'],
+            'Superficie Disperdente': riga['supdi'],
             'EPgl_nren': riga['EPgl_nren']
         })
 
     df = pd.DataFrame(valori)
-    tabella = df.pivot(index='zona_climatica', columns='indice_periodo', values='EPgl_nren')
-    tabella = tabella.rename(columns=PERIOD_LABELS)
-    tabella = tabella[[PERIOD_LABELS[i] for i in range(len(PERIOD_LABELS))]]
+    return df
 
-    return tabella
 
 def run_estrazione_siape() -> pd.DataFrame:
-    """
-    Funzione principale per estrarre e salvare i dati SIAPE.
-    """
     dati = estrai_dati_siape()
     df = salva_dati_siape(dati)
     logger.info(f"Esportazione completata: {len(dati)} record scritti.")
