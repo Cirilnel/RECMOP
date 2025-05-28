@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 # Costanti
 URL_SIAPE = "https://siape.enea.it/api/v1/aggr-data"
 OUTPUT_DIR = "../Data_Collection/csv_tables-fase1"
-OUTPUT_FILENAME = "epgl_nren_tabella_siape.csv"
+OUTPUT_FILENAME = "epgl_nren_ren_co2_tabella_siape.csv"
 ZONES = ['A', 'B', 'C', 'D', 'E', 'F']
 PERIODS = [
     (-1000000000, 1944),
@@ -118,7 +118,9 @@ def estrai_dati_siape() -> List[Dict[str, str]]:
 
                             logger.info(f"[OK] Zona {zona}, periodo {periodo_label}, "
                                         f"SURIS {suris_str}, VOLRIS {volris_str}, "
-                                        f"SUPDI {supdi_str}: EPgl_nren={total[1] if len(total) > 1 else 'N/D'}")
+                                        f"SUPDI {supdi_str}: EPgl_nren={total[1] if len(total) > 1 else 'N/D'}, "
+                                        f"EPgl_ren={total[2] if len(total) > 2 else 'N/D'}, "
+                                        f"CO2={total[3] if len(total) > 3 else 'N/D'}")
 
                         except Exception as e:
                             logger.warning(f"[ERRORE] Zona {zona}, periodo {periodo_label}, "
@@ -137,6 +139,25 @@ def format_range(min_val: int, max_val: int) -> str:
         return f"{min_val}-{max_val}"
 
 
+def get_dataframe_siape(dati: List[Dict[str, str]]) -> pd.DataFrame:
+    valori = []
+
+    for riga in dati:
+        valori.append({
+            'zona_climatica': riga['zona'],
+            'periodo': riga['periodo'],
+            'Superficie Utile Riscaldata': riga['suris'],
+            'Volume Lordo Riscaldato': riga['volris'],
+            'Superficie Disperdente': riga['supdi'],
+            'EPgl_nren': riga['EPgl_nren'],
+            'EPgl_ren': riga['EPgl_ren'],
+            'CO2': riga['CO2'],
+        })
+
+    df = pd.DataFrame(valori)
+    return df
+
+
 def salva_dati_siape(dati: List[Dict[str, str]], filename: str = OUTPUT_FILENAME, sep: str = ";") -> pd.DataFrame:
     df = get_dataframe_siape(dati)
     os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -148,29 +169,11 @@ def salva_dati_siape(dati: List[Dict[str, str]], filename: str = OUTPUT_FILENAME
     return df
 
 
-def get_dataframe_siape(dati: List[Dict[str, str]]) -> pd.DataFrame:
-    valori = []
-
-    for riga in dati:
-        valori.append({
-            'zona_climatica': riga['zona'],
-            'periodo': riga['periodo'],
-            'Superficie Utile Riscaldata': riga['suris'],
-            'Volume Lordo Riscaldato': riga['volris'],
-            'Superficie Disperdente': riga['supdi'],
-            'EPgl_nren': riga['EPgl_nren']
-        })
-
-    df = pd.DataFrame(valori)
-    return df
-
-
 def run_estrazione_siape() -> pd.DataFrame:
     dati = estrai_dati_siape()
     df = salva_dati_siape(dati)
     logger.info(f"Esportazione completata: {len(dati)} record scritti.")
     return df
-
 
 if __name__ == '__main__':
     run_estrazione_siape()
