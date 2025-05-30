@@ -108,6 +108,7 @@ def crea_dataframe_fase1() -> pd.DataFrame:
             choices=candidates,
             scorer=fuzz.token_sort_ratio
         )
+
         if score >= THRESHOLD:
             norm_row = df_norm[
                 (df_norm['PROVINCIA']==prov) & (df_norm['COMUNE']==best)
