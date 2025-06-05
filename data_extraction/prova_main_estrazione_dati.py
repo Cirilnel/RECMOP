@@ -127,6 +127,8 @@ def salva_dati_fase1(df: pd.DataFrame, path: str = OUTPUT_CSV) -> None:
     df.to_csv(path, index=False, sep=';', encoding='utf-8-sig')
     logger.info("Salvato CSV fase1 in %s", path)
 
+
+'''
 def create_merged_shapefile() -> None:
     gdf = gpd.read_file(SHAPEFILE_INPUT)
     df_csv = pd.read_csv(OUTPUT_CSV, sep=';', encoding='utf-8-sig')
@@ -148,11 +150,12 @@ def create_merged_shapefile() -> None:
     os.makedirs(os.path.dirname(SHAPEFILE_OUTPUT), exist_ok=True)
     merged.to_file(SHAPEFILE_OUTPUT, encoding='utf-8')
     logger.info("Shapefile unito salvato in %s", SHAPEFILE_OUTPUT)
+'''
 
 def run_fase1() -> None:
     df_fase1 = crea_dataframe_fase1()
     salva_dati_fase1(df_fase1)
-    create_merged_shapefile()
+    #create_merged_shapefile()
 
 if __name__ == "__main__":
     run_fase1()
