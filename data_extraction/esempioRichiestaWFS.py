@@ -1,16 +1,11 @@
 import requests
 from pyproj import Transformer
 
-# Coordinate in EPSG:25833 (UTM zone 33N, metri)
-x_utm, y_utm = 555823.2153689115, 4465569.97881136
-
-# Crea trasformatore da EPSG:25833 a EPSG:6706
-transformer = Transformer.from_crs("EPSG:25833", "EPSG:6706", always_xy=True)
-lon, lat = transformer.transform(x_utm, y_utm)
-print(f"Coordinate trasformate: lon={lon}, lat={lat}")
-
 # URL del servizio WFS
 url = "https://wfs.cartografia.agenziaentrate.gov.it/inspire/wfs/owfs01.php"
+
+lon = 15.657233665710933
+lat = 40.338808262979505
 
 # Parametri della richiesta
 params = {
@@ -19,7 +14,7 @@ params = {
     "request": "GetFeature",
     "typenames": "CP:CadastralParcel",
     "outputFormat": "application/gml+xml; version=3.2",
-    "cql_filter": f"CONTAINS(geom, POINT({lon} {lat}))"
+     "cql_filter": f"CONTAINS(geom, POINT({lat} {lon}))"
 }
 
 # Effettua la richiesta
