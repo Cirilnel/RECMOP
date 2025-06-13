@@ -1,8 +1,6 @@
 import os
 import logging
-from typing import List
 import pandas as pd
-from pandas.core.interchange.dataframe_protocol import DataFrame
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -42,6 +40,14 @@ def estrai_dati_variabili_censuarie(percorso_file: str, sep: str = ';', encoding
     if 'SEZ2011' in df_result.columns:
         df_result['SEZ2011'] = df_result['SEZ2011'].astype('int64')
 
+    # Conversione del nome del comune a maiuscolo
+    if 'COMUNE' in df_result.columns:
+        df_result['COMUNE'] = df_result['COMUNE'].str.upper()
+
+    # Conversione del nome della provincia a maiuscolo
+    if 'PROVINCIA' in df_result.columns:
+        df_result['PROVINCIA'] = df_result['PROVINCIA'].str.upper()
+
     return df_result
 
 
@@ -70,6 +76,7 @@ def run_estrazione_variabili_censuarie() -> pd.DataFrame:
     df_estratto = estrai_dati_variabili_censuarie(INPUT_PATH)
     salva_dati_variabili_censuarie(df_estratto, cartella_output=OUTPUT_DIR, nome_file=OUTPUT_FILENAME)
     return df_estratto
+
 
 if __name__ == "__main__":
     run_estrazione_variabili_censuarie()
