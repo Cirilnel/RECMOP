@@ -12,28 +12,27 @@ from rapidfuzz import process, fuzz
 THRESHOLD = 50
 
 PROV_DICT = {
-    "BI":"Biella","TO":"Torino","VC":"Vercelli","NO":"Novara","CN":"Cuneo","AT":"Asti","AL":"Alessandria",
-    "AO":"Aosta","VA":"Varese","CO":"Como","SO":"Sondrio","MI":"Milano","BG":"Bergamo","BS":"Brescia",
-    "PV":"Pavia","CR":"Cremona","MN":"Mantova","BZ":"Bolzano","TN":"Trento","VR":"Verona","VI":"Vicenza",
-    "BL":"Belluno","TV":"Treviso","VE":"Venezia","PD":"Padova","RO":"Rovigo","UD":"Udine","GO":"Gorizia",
-    "TS":"Trieste","PN":"Pordenone","IM":"Imperia","SV":"Savona","GE":"Genova","SP":"La Spezia",
-    "PC":"Piacenza","PR":"Parma","RE":"Reggio Emilia","MO":"Modena","BO":"Bologna","FE":"Ferrara",
-    "RA":"Ravenna","FO":"Forlì-Cesena","MS":"Massa-Carrara","LU":"Lucca","PT":"Pistoia","FI":"Firenze",
-    "LI":"Livorno","PI":"Pisa","AR":"Arezzo","SI":"Siena","GR":"Grosseto","PG":"Perugia","TR":"Terni",
-    "PS":"Pesaro e Urbino","AN":"Ancona","MC":"Macerata","AP":"Ascoli Piceno","VT":"Viterbo",
-    "RI":"Rieti","RM":"Roma","LT":"Latina","FR":"Frosinone","AQ":"L'Aquila","CS":"Cosenza",
-    "CZ":"Catanzaro","RC":"Reggio Calabria","TP":"Trapani","PA":"Palermo","TE":"Teramo","PE":"Pescara",
-    "CH":"Chieti","CB":"Campobasso","IS":"Isernia","CE":"Caserta","BN":"Benevento","NA":"Napoli",
-    "AV":"Avellino","SA":"Salerno","FG":"Foggia","BA":"Bari","TA":"Taranto","BR":"Brindisi",
-    "LE":"Lecce","PZ":"Potenza","MT":"Matera","MR":"Matera","ME":"Messina","AG":"Agrigento",
-    "CL":"Caltanissetta","EN":"Enna","CT":"Catania","RG":"Ragusa","SR":"Siracusa","SS":"Sassari",
-    "NU":"Nuoro","CA":"Cagliari","OR":"Oristano"
+    "BI": "BIELLA", "TO": "TORINO", "VC": "VERCELLI", "NO": "NOVARA", "CN": "CUNEO", "AT": "ASTI", "AL": "ALESSANDRIA",
+    "AO": "AOSTA", "VA": "VARESE", "CO": "COMO", "SO": "SONDRIO", "MI": "MILANO", "BG": "BERGAMO", "BS": "BRESCIA",
+    "PV": "PAVIA", "CR": "CREMONA", "MN": "MANTOVA", "BZ": "BOLZANO", "TN": "TRENTO", "VR": "VERONA", "VI": "VICENZA",
+    "BL": "BELLUNO", "TV": "TREVISO", "VE": "VENEZIA", "PD": "PADOVA", "RO": "ROVIGO", "UD": "UDINE", "GO": "GORIZIA",
+    "TS": "TRIESTE", "PN": "PORDENONE", "IM": "IMPERIA", "SV": "SAVONA", "GE": "GENOVA", "SP": "LA SPEZIA",
+    "PC": "PIACENZA", "PR": "PARMA", "RE": "REGGIO EMILIA", "MO": "MODENA", "BO": "BOLOGNA", "FE": "FERRARA",
+    "RA": "RAVENNA", "FO": "FORLÌ-CESENA", "MS": "MASSA-CARRARA", "LU": "LUCCA", "PT": "PISTOIA", "FI": "FIRENZE",
+    "LI": "LIVORNO", "PI": "PISA", "AR": "AREZZO", "SI": "SIENA", "GR": "GROSSETO", "PG": "PERUGIA", "TR": "TERNI",
+    "PS": "PESARO E URBINO", "AN": "ANCONA", "MC": "MACERATA", "AP": "ASCOLI PICENO", "VT": "VITERBO",
+    "RI": "RIETI", "RM": "ROMA", "LT": "LATINA", "FR": "FROSINONE", "AQ": "L'AQUILA", "CS": "COSENZA",
+    "CZ": "CATANZARO", "RC": "REGGIO CALABRIA", "TP": "TRAPANI", "PA": "PALERMO", "TE": "TERAMO", "PE": "PESCARA",
+    "CH": "CHIETI", "CB": "CAMPOBASSO", "IS": "ISERNIA", "CE": "CASERTA", "BN": "BENEVENTO", "NA": "NAPOLI",
+    "AV": "AVELLINO", "SA": "SALERNO", "FG": "FOGGIA", "BA": "BARI", "TA": "TARANTO", "BR": "BRINDISI",
+    "LE": "LECCE", "PZ": "POTENZA", "MT": "MATERA", "MR": "MATERA", "ME": "MESSINA", "AG": "AGRIGENTO",
+    "CL": "CALTANISSETTA", "EN": "ENNA", "CT": "CATANIA", "RG": "RAGUSA", "SR": "SIRACUSA", "SS": "SASSARI",
+    "NU": "NUORO", "CA": "CAGLIARI", "OR": "ORISTANO"
 }
 
+
 # Paths
-OUTPUT_CSV = os.path.join('../Data_Collection/csv_tables-fase1', 'dati_fase1.csv')
-SHAPEFILE_INPUT = "../Istat/Regioni/Campania/R15_11_WGS84.shp"
-SHAPEFILE_OUTPUT = "../Data_Collection/shapefiles_merged/Campania/campania_merged.shp"
+OUTPUT_CSV = os.path.join('../Data_Collection/csv_tables-fase1', 'join_data.csv')
 
 # =============================================================================
 # SETUP LOGGING
@@ -46,21 +45,19 @@ logger = logging.getLogger(__name__)
 # FUNZIONI ESTRAZIONE
 # =============================================================================
 
-from normattiva import run_estrazione_normattiva
-from data_extraction.siape import run_estrazione_siape
-from estrazione_dati_basi_territoriali import run_estrazione_basi_territoriali
-from estrazione_dati_variabili_censuarie import run_estrazione_variabili_censuarie
+from normattiva import estrai_dati_normattiva
+from estrazione_dati_basi_territoriali import estrai_dati_basi_territoriali
+from estrazione_dati_variabili_censuarie import estrai_dati_variabili_censuarie
 
 # =============================================================================
 # FUNZIONI DI ELABORAZIONE
 # =============================================================================
 
-def crea_dataframe_fase1() -> pd.DataFrame:
+def join_data(input_path_basi_territoriali: str, input_path_variabili_censuarie: str) -> pd.DataFrame:
     # 1) Estrazione dati
-    df_base = run_estrazione_basi_territoriali()
-    df_cens = run_estrazione_variabili_censuarie()
-    df_norm = run_estrazione_normattiva()
-    df_siape = run_estrazione_siape()
+    df_base = estrai_dati_basi_territoriali(input_path_basi_territoriali)
+    df_cens = estrai_dati_variabili_censuarie(input_path_variabili_censuarie)
+    df_norm = estrai_dati_normattiva()
 
     # 2) Merge base + censuarie
     df_merged = pd.merge(df_base, df_cens, on='SEZ2011', how='inner')
@@ -123,40 +120,8 @@ def crea_dataframe_fase1() -> pd.DataFrame:
 
     return df_final
 
-def salva_dati_fase1(df: pd.DataFrame, path: str = OUTPUT_CSV) -> None:
+def salva_join_data(df: pd.DataFrame, path: str = OUTPUT_CSV) -> None:
     os.makedirs(os.path.dirname(path), exist_ok=True)
     df.to_csv(path, index=False, sep=';', encoding='utf-8-sig')
     logger.info("Salvato CSV fase1 in %s", path)
 
-
-'''
-def create_merged_shapefile() -> None:
-    gdf = gpd.read_file(SHAPEFILE_INPUT)
-    df_csv = pd.read_csv(OUTPUT_CSV, sep=';', encoding='utf-8-sig')
-
-    logger.info("Colonne shapefile: %s", gdf.columns.tolist())
-    logger.info("Colonne CSV fase1: %s", df_csv.columns.tolist())
-
-    to_merge = [c for c in df_csv.columns if c not in gdf.columns or c=='SEZ2011']
-    removed = [c for c in df_csv.columns if c not in to_merge]
-    logger.info("Colonne unite: %s", to_merge)
-    logger.info("Colonne scartate: %s", removed)
-
-    df_csv = df_csv[to_merge]
-    merged = gdf.merge(df_csv, how='left', on='SEZ2011')
-
-    merged['LOC2011'] = merged['LOC2011'].astype(str)
-    merged = merged.rename(columns={'ZONA_CLIMATICA':'ZONA_CLIM','GRADI_GIORNO':'GRADI_GIO'})
-
-    os.makedirs(os.path.dirname(SHAPEFILE_OUTPUT), exist_ok=True)
-    merged.to_file(SHAPEFILE_OUTPUT, encoding='utf-8')
-    logger.info("Shapefile unito salvato in %s", SHAPEFILE_OUTPUT)
-'''
-
-def run_fase1() -> None:
-    df_fase1 = crea_dataframe_fase1()
-    salva_dati_fase1(df_fase1)
-    #create_merged_shapefile()
-
-if __name__ == "__main__":
-    run_fase1()

@@ -1,6 +1,5 @@
 import os
 import logging
-from typing import List, Dict
 import requests
 import pandas as pd
 
@@ -50,8 +49,15 @@ HEADERS = {
     'X-Requested-With': 'XMLHttpRequest',
 }
 
-def estrai_dati_siape() -> List[Dict[str, str]]:
-    risultati = []
+
+def estrai_dati_siape() -> pd.DataFrame:
+    """
+    Estrae e struttura i dati dal portale SIAPE in un DataFrame.
+
+    Returns:
+        pd.DataFrame: Dati aggregati per zona climatica e periodo edilizio.
+    """
+    records = []
 
     for zona in ZONES:
         for idx, (inizio, fine) in enumerate(PERIODS):
@@ -71,54 +77,41 @@ def estrai_dati_siape() -> List[Dict[str, str]]:
                 json_data = response.json()
                 total = json_data.get('total', [])
 
-                risultati.append({
-                    'zona': zona,
+                record = {
+                    'zona_climatica': zona,
                     'periodo': periodo_label,
                     'EPgl_nren': total[1] if len(total) > 1 else None,
                     'EPgl_ren': total[2] if len(total) > 2 else None,
                     'CO2': total[3] if len(total) > 3 else None,
-                })
+                }
+                records.append(record)
 
                 logger.info(
                     f"[OK] Zona {zona}, periodo {periodo_label}: "
-                    f"EPgl_nren={total[1] if len(total) > 1 else 'N/D'}, "
-                    f"EPgl_ren={total[2] if len(total) > 2 else 'N/D'}, "
-                    f"CO2={total[3] if len(total) > 3 else 'N/D'}"
+                    f"EPgl_nren={record['EPgl_nren']}, "
+                    f"EPgl_ren={record['EPgl_ren']}, "
+                    f"CO2={record['CO2']}"
                 )
 
             except Exception as e:
-                logger.warning(
-                    f"[ERRORE] Zona {zona}, periodo {periodo_label}: {e}"
-                )
+                logger.warning(f"[ERRORE] Zona {zona}, periodo {periodo_label}: {e}")
 
-    return risultati
-
-
-def get_dataframe_siape(dati: List[Dict[str, str]]) -> pd.DataFrame:
-    df = pd.DataFrame([{
-        'zona_climatica': r['zona'],
-        'periodo': r['periodo'],
-        'EPgl_nren': r['EPgl_nren'],
-        'EPgl_ren': r['EPgl_ren'],
-        'CO2': r['CO2'],
-    } for r in dati])
+    df = pd.DataFrame(records)
     return df
 
 
-def salva_dati_siape(dati: List[Dict[str, str]], filename: str = OUTPUT_FILENAME, sep: str = ";") -> pd.DataFrame:
-    df = get_dataframe_siape(dati)
+def salva_dati_siape(df: pd.DataFrame, filename: str = OUTPUT_FILENAME, sep: str = ";") -> pd.DataFrame:
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     percorso_output = os.path.join(OUTPUT_DIR, filename)
     df.to_csv(percorso_output, sep=sep, index=False, encoding='utf-8')
-
     logger.info(f"Dati salvati in: {percorso_output}")
     return df
 
 
 def run_estrazione_siape() -> pd.DataFrame:
-    dati = estrai_dati_siape()
-    df = salva_dati_siape(dati)
-    logger.info(f"Esportazione completata: {len(dati)} record scritti.")
+    df = estrai_dati_siape()
+    salva_dati_siape(df)
+    logger.info(f"Esportazione completata: {len(df)} record scritti.")
     return df
 
 

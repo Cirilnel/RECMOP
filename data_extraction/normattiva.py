@@ -23,12 +23,12 @@ OUTPUT_DIR = "../Data_Collection/csv_tables-fase1"
 OUTPUT_FILENAME = "dati_normattiva_playwright_finale.csv"
 
 
-def estrai_dati_normattiva() -> List[str]:
+def estrai_dati_normattiva() -> pd.DataFrame:
     """
-    Estrae i dati climatici dal decreto su Normattiva usando Playwright.
+    Estrae i dati climatici dal decreto su Normattiva usando Playwright e li restituisce come DataFrame.
 
     Returns:
-        List[str]: Lista di righe testuali estratte dai singoli articoli.
+        pd.DataFrame: DataFrame con le colonne [PROVINCIA, ZONA_CLIMATICA, GRADI_GIORNO, ALTITUDINE, COMUNE].
     """
     dati_finali = []
 
@@ -76,70 +76,53 @@ def estrai_dati_normattiva() -> List[str]:
 
         browser.close()
 
-    return dati_finali
-
-
-def salva_dati_normattiva(dati: List[str], output_dir: str = OUTPUT_DIR, nome_file: str = OUTPUT_FILENAME) -> pd.DataFrame:
-    """
-    Salva i dati estratti da Normattiva in formato CSV.
-
-    Args:
-        dati: Lista di righe di testo da salvare.
-        output_dir: Cartella di destinazione.
-        nome_file: Nome del file CSV.
-    """
-    if not dati:
-        logger.warning("Nessun dato da scrivere.")
-        return
-
-    os.makedirs(output_dir, exist_ok=True)
-    df = get_dataframe_normattiva(dati)
-    output_path = os.path.join(output_dir, nome_file)
-    df.to_csv(output_path, index=False, sep=";", encoding="utf-8-sig")
-
-    logger.info(f"Dati salvati in: {output_path}")
-
-    return df
-
-def get_dataframe_normattiva(dati: List[str]) -> pd.DataFrame:
-    """
-    Restituisce un DataFrame con i dati estratti da Normattiva,
-    considerando solo le righe che iniziano con una provincia di 2 caratteri
-    o che sono racchiuse tra doppie parentesi.
-    Sostituisce eventuali 'O' con '0' in GradiGiorno e Altitudine.
-
-    Returns:
-        DataFrame con i dati filtrati ed estratti.
-    """
+    # Costruzione del DataFrame dai dati finali
     records = []
     righe_scartate = 0
 
-    for riga in dati:
+    for riga in dati_finali:
         riga_pulita = riga.strip()
 
-        # Se la riga è racchiusa tra doppie parentesi, le rimuovo
         if riga_pulita.startswith("((") and riga_pulita.endswith("))"):
             riga_pulita = riga_pulita[2:-2].strip()
 
         colonne = riga_pulita.split()
 
-        # Se dopo il clean la prima colonna è di 2 caratteri e ci sono almeno 5 colonne, la tengo
         if len(colonne) >= 5 and len(colonne[0]) == 2:
             provincia = colonne[0]
             zona = colonne[1]
             gradi_giorno = colonne[2].replace("O", "0")
             altitudine = colonne[3].replace("O", "0")
             comune = ' '.join(colonne[4:])
-            record = [provincia, zona, gradi_giorno, altitudine, comune]
-            records.append(record)
+            records.append([provincia, zona, gradi_giorno, altitudine, comune])
         else:
             righe_scartate += 1
             logger.debug(f"Riga scartata (formato non valido): {riga}")
 
-    df = pd.DataFrame(records, columns=["PROVINCIA", "ZONA_CLIMATICA", "GRADI_GIORNO", "ALTITUDINE", "COMUNE"])
-
     logger.info(f"Totale righe scartate: {righe_scartate}")
 
+    df = pd.DataFrame(records, columns=["PROVINCIA", "ZONA_CLIMATICA", "GRADI_GIORNO", "ALTITUDINE", "COMUNE"])
+    return df
+
+
+def salva_dati_normattiva(df: pd.DataFrame, output_dir: str = OUTPUT_DIR, nome_file: str = OUTPUT_FILENAME) -> pd.DataFrame:
+    """
+    Salva i dati estratti da Normattiva in formato CSV.
+
+    Args:
+        df: DataFrame da salvare.
+        output_dir: Cartella di destinazione.
+        nome_file: Nome del file CSV.
+    """
+    if df.empty:
+        logger.warning("Nessun dato da scrivere.")
+        return df
+
+    os.makedirs(output_dir, exist_ok=True)
+    output_path = os.path.join(output_dir, nome_file)
+    df.to_csv(output_path, index=False, sep=";", encoding="utf-8-sig")
+
+    logger.info(f"Dati salvati in: {output_path}")
     return df
 
 
@@ -147,13 +130,11 @@ def run_estrazione_normattiva() -> pd.DataFrame:
     """
     Funzione principale per estrarre e salvare i dati da Normattiva.
     """
-    dati = estrai_dati_normattiva()
-    df = salva_dati_normattiva(dati)
-    logger.info(f"Esportazione completata: {len(dati)} record scritti.")
-
+    df = estrai_dati_normattiva()
+    salva_dati_normattiva(df)
+    logger.info(f"Esportazione completata: {len(df)} record scritti.")
     return df
 
 
 if __name__ == "__main__":
     run_estrazione_normattiva()
-
