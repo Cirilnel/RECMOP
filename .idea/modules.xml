@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/RECMOP.iml" filepath="$PROJECT_DIR$/.idea/RECMOP.iml" />
+      <module fileurl="file://$PROJECT_DIR$/grass_gis/grass_gis.iml" filepath="$PROJECT_DIR$/grass_gis/grass_gis.iml" />
     </modules>
   </component>
 </project>
