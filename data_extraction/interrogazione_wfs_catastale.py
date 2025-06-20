@@ -110,20 +110,29 @@ def process_shapefile(input_shp: str) -> gpd.GeoDataFrame:
 
     gdf_centroidi = genera_centroidi_da_gdf(gdf_poligoni)
 
-    for col in ['INSPIREID_LOCALID', 'LABEL', 'ADMINISTRATIVEUNIT', 'NATIONALCADASTRALREFERENCE']:
-        gdf_centroidi[col] = None
+    # Prepara colonne per i dati catastali
+    gdf_centroidi['FOGLIO'] = None
+    gdf_centroidi['PARTICELLA'] = None
+    gdf_centroidi['COD_COMUNE'] = None
 
     logger.info(f"Elaborazione di {len(gdf_centroidi)} centroidi...")
     for index, row in gdf_centroidi.iterrows():
         x, y = row.geometry.x, row.geometry.y
         result = query_catasto_point(x, y)
         if result:
-            for key, value in result.items():
-                gdf_centroidi.at[index, key] = value
+            # Estrai FOGLIO da INSPIREID_LOCALID
+            inspireid = result.get('INSPIREID_LOCALID', '')
+            foglio = inspireid.split('_')[1].split('.')[0] if '_' in inspireid and '.' in inspireid else None
+            gdf_centroidi.at[index, 'FOGLIO'] = foglio
+            gdf_centroidi.at[index, 'PARTICELLA'] = result.get('LABEL')
+            gdf_centroidi.at[index, 'COD_COMUNE'] = result.get('ADMINISTRATIVEUNIT')
 
     logger.info("Associazione dati catastali ai poligoni originali tramite 'id'.")
-    gdf_risultato = gdf_poligoni.merge(gdf_centroidi.drop(columns='geometry'), on='id', how='left')
-    gdf_risultato = gdf_risultato.drop(columns='id')
+    gdf_risultato = gdf_poligoni.merge(
+        gdf_centroidi[['id', 'FOGLIO', 'PARTICELLA', 'COD_COMUNE']],
+        on='id',
+        how='left'
+    ).drop(columns='id')
 
     # Reimposta CRS originale (se necessario)
     if gdf_risultato.crs != crs_originale:
