@@ -92,7 +92,7 @@ def calcola_coefficiente_domanda(df_join: pd.DataFrame, df_siape: pd.DataFrame, 
     return round(coefficiente_domanda, 2)
 
 
-def calcola_domanda_energetica() -> gpd.GeoDataFrame:
+def calcola_domanda_energetica(comune: str, provincia: str) -> gpd.GeoDataFrame:
     """
     Funzione principale: carica i dati, calcola il coefficiente di domanda
     energetica per un comune e lo stampa.
@@ -116,12 +116,12 @@ def calcola_domanda_energetica() -> gpd.GeoDataFrame:
         logger.warning(f"Errore nel caricamento shapefile fabbricati: {e}")
         gdf_fabbricati = None
 
-    coefficiente_domanda = calcola_coefficiente_domanda(df_join, df_siape, 'PADULA', 'SALERNO')
+    coefficiente_domanda = calcola_coefficiente_domanda(df_join, df_siape, comune, provincia)
     logger.info(f"Il coefficiente di domanda energetica per il comune di Padula (SA) è: {coefficiente_domanda}")
 
     #aggiungi a gdf_fabbricati una colonna 'DOMANDA_ENERGETICA' data da area_mq moltiplicata per coefficiente_domanda
     if gdf_fabbricati is not None:
-        gdf_fabbricati['DOMANDA_ENERGETICA'] = gdf_fabbricati['area_mq'] * coefficiente_domanda
+        gdf_fabbricati['domanda_en'] = gdf_fabbricati['area_mq'] * coefficiente_domanda
         logger.info("Colonna DOMANDA_ENERGETICA aggiunta allo shapefile fabbricati.")
 
         # Salva il risultato in un nuovo file shapefile
@@ -131,4 +131,4 @@ def calcola_domanda_energetica() -> gpd.GeoDataFrame:
     return gdf_fabbricati
 
 if __name__ == '__main__':
-    calcola_domanda_energetica()
+    calcola_domanda_energetica('PADULA', 'SALERNO')
