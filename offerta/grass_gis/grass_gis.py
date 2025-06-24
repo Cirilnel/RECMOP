@@ -18,22 +18,17 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 # Carica configurazioni da .env
-load_dotenv(os.path.join('..', '.env'))
+load_dotenv(os.path.join('..', '..', '.env'))
 GRASS_BASE = os.getenv("GRASS_BASE")
 GRASS_GISDB = os.getenv("GRASS_GISDB")
 LOCATION = os.getenv("GRASS_LOCATION", "auto_location")
 MAPSET = os.getenv("GRASS_MAPSET", "PERMANENT")
 
 # Directory di input/output fissi
-FABBRICATI_BASE = os.path.abspath(os.path.join('..', 'FABBRICATI'))
-DSM_BASE = os.path.abspath(os.path.join('..', 'input_dsm'))
+FABBRICATI_BASE = os.path.abspath(os.path.join('..', '..', 'FABBRICATI'))
+DSM_BASE = os.path.abspath(os.path.join('..', '..', 'input_dsm'))
 OUTPUT_DIR = os.path.abspath(os.path.join('..', 'grass_gis'))
-SHAPE_OUT_DIR = os.path.abspath(os.path.join('..', 'Data_Collection', 'shapefiles'))
-
-# Funzione stub per il calcolo delle aree (sostituire con la vostra implementazione)
-# def calculate_area(gdf: gpd.GeoDataFrame) -> pd.Series:
-#     return gdf.geometry.area
-
+SHAPE_OUT_DIR = os.path.abspath(os.path.join('..', '..', 'Data_Collection', 'shapefiles'))
 
 def get_epsg_from_dem(dem_path) -> int:
     with rasterio.open(dem_path) as src:
@@ -177,15 +172,9 @@ def solar_radiation_pipeline(provincia, comune) -> str:
 
     return output_path
 
-
 def calculate_building_irradiance(provincia, comune) -> gpd.GeoDataFrame:
-    """
-    Calcola l'irraggimento medio annuo per ogni fabbricato e restituisce un GeoDataFrame.
-    Inoltre salva uno shapefile con l'offerta energetica.
-    """
     provincia = provincia.strip().lower()
     comune = comune.strip().lower()
-    # Percorsi
     raster_path = os.path.join(OUTPUT_DIR, f"irradianza_annua_{provincia}_{comune}_kwh.tif")
     shp_dir = os.path.join(FABBRICATI_BASE, f"fabbricati_{provincia}_{comune}")
     shp_files = [f for f in os.listdir(shp_dir) if f.lower().endswith('.shp')]
@@ -199,10 +188,14 @@ def calculate_building_irradiance(provincia, comune) -> gpd.GeoDataFrame:
 
     # Zonal statistics: mean irradiance
     stats = zonal_stats(gdf, raster_path, stats=['mean'])
-    gdf['irradiance_kwh_mq'] = [st['mean'] or 0 for st in stats]
+    gdf['irradiance_kwh_mq'] = [st['mean'] for st in stats]
 
-    # Area dei poligoni (usa la vostra funzione esistente)
+    # Filtra i poligoni senza valore di irraggiamento (None o 0)
+    gdf = gdf[gdf['irradiance_kwh_mq'].notnull() & (gdf['irradiance_kwh_mq'] > 0)]
+
+    # Area dei poligoni
     gdf = calcola_area(gdf, nome_colonna='area_mq')
+
     # Offerta energetica totale per fabbricato
     gdf['offerta_energetica_kwh'] = gdf['irradiance_kwh_mq'] * gdf['area_mq']
 
@@ -215,8 +208,8 @@ def calculate_building_irradiance(provincia, comune) -> gpd.GeoDataFrame:
 
     if callable(cleanup_fn):
         cleanup_fn()
-    return gdf
 
+    return gdf
 
 if __name__ == "__main__":
     # Esempio di utilizzo
