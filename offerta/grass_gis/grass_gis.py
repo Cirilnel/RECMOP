@@ -29,6 +29,9 @@ FABBRICATI_BASE = os.path.abspath(os.path.join('..', '..', 'FABBRICATI'))
 DSM_BASE = os.path.abspath(os.path.join('..', '..', 'input_dsm'))
 OUTPUT_DIR = os.path.abspath(os.path.join('..', 'grass_gis'))
 SHAPE_OUT_DIR = os.path.abspath(os.path.join('..', '..', 'Data_Collection', 'shapefiles'))
+# Percorso al file CSV dei pannelli fotovoltaici
+PANEL_DATA_PATH = os.path.abspath(os.path.join('..', 'panel', 'panel_with_price.csv'))
+
 
 def get_epsg_from_dem(dem_path) -> int:
     with rasterio.open(dem_path) as src:
@@ -46,10 +49,13 @@ def validate_or_convert_vector_crs(dem_path, vector_path) -> tuple:
     if gdf.crs.to_epsg() == dem_epsg:
         logger.info("CRS coerente.")
         return vector_path, None
+
     logger.warning("CRS incoerente. Riproietto...")
     gdf_converted = gdf.to_crs(epsg=dem_epsg)
+
     tmpdir = tempfile.mkdtemp()
     temp_path = os.path.join(tmpdir, "vector_reprojected.shp")
+
     gdf_converted.to_file(temp_path)
 
     def cleanup() -> None:
@@ -172,9 +178,15 @@ def solar_radiation_pipeline(provincia, comune) -> str:
 
     return output_path
 
+
 def calculate_building_irradiance(provincia, comune) -> gpd.GeoDataFrame:
+    """
+    Calcola l'irraggimento medio annuo per ogni fabbricato e restituisce un GeoDataFrame.
+    Inoltre salva uno shapefile con l'offerta energetica.
+    """
     provincia = provincia.strip().lower()
     comune = comune.strip().lower()
+    # Percorsi
     raster_path = os.path.join(OUTPUT_DIR, f"irradianza_annua_{provincia}_{comune}_kwh.tif")
     shp_dir = os.path.join(FABBRICATI_BASE, f"fabbricati_{provincia}_{comune}")
     shp_files = [f for f in os.listdir(shp_dir) if f.lower().endswith('.shp')]
@@ -190,20 +202,83 @@ def calculate_building_irradiance(provincia, comune) -> gpd.GeoDataFrame:
     stats = zonal_stats(gdf, raster_path, stats=['mean'])
     gdf['irradiance_kwh_mq'] = [st['mean'] for st in stats]
 
-    # Filtra i poligoni senza valore di irraggiamento (None o 0)
     gdf = gdf[gdf['irradiance_kwh_mq'].notnull() & (gdf['irradiance_kwh_mq'] > 0)]
 
-    # Area dei poligoni
     gdf = calcola_area(gdf, nome_colonna='area_mq')
 
-    # Offerta energetica totale per fabbricato
-    gdf['offerta_energetica_kwh'] = gdf['irradiance_kwh_mq'] * gdf['area_mq']
+    logger.info("Aggiunta dati dei pannelli fotovoltaici...")
+    try:
+        panel_df = pd.read_csv(PANEL_DATA_PATH, delimiter=';', decimal=',', na_values=['n.a.', 'N.A.', 'na', 'NA', '-', ''])
 
-    # Directory di output shapefile
+        numeric_cols = ['Potenza (Wp)', 'Efficienza (%)', 'Prezzo', 'Superficie']
+
+        # Converte le colonne numeriche in numerico, lasciando NaN i valori non validi
+        for col in numeric_cols:
+            if col in panel_df.columns:
+                panel_df[col] = pd.to_numeric(panel_df[col], errors='coerce')
+            else:
+                logger.error(f"Colonna mancante nel file CSV: {col}")
+                raise ValueError(f"Colonna mancante: {col}")
+
+        # Rimuove le righe con dati numerici mancanti
+        panel_df.dropna(subset=numeric_cols, inplace=True)
+
+        if panel_df.empty:
+            raise ValueError("Nessun pannello con dati numerici completi trovato nel file CSV dopo la pulizia.")
+
+
+    # Seleziona il primo pannello *valido* dalla lista pulita
+        panel_specs = panel_df.iloc[0]
+
+        ptnz_pv_w = panel_specs['Potenza (Wp)']
+        dims_mq = panel_specs['Superficie'] # Ora questa variabile è sicuramente un numero
+        prezzo_uni = panel_specs['Prezzo']
+        effic_pv_percent = panel_specs['Efficienza (%)']
+
+        effic_pv = effic_pv_percent / 100.0
+
+        gdf['Ptnz PV'] = ptnz_pv_w
+        gdf['Effic PV'] = effic_pv_percent
+        gdf['Dims mq'] = dims_mq
+        gdf['Prezzo uni'] = prezzo_uni
+
+        # Questo confronto ora funzionerà correttamente
+        if dims_mq > 0:
+            gdf['n. PV'] = (gdf['area_mq'] / dims_mq).astype(int)
+        else:
+            gdf['n. PV'] = 0
+            logger.warning("La dimensione del pannello (Superficie) è 0. Il numero di pannelli è impostato a 0.")
+
+        gdf['Prezzo tot'] = gdf['n. PV'] * gdf['Prezzo uni']
+        area_pannelli_totale = gdf['n. PV'] * dims_mq
+        gdf['Prod kWh/y'] = gdf['irradiance_kwh_mq'] * area_pannelli_totale * effic_pv
+
+        logger.info("Dati dei pannelli e calcoli di produzione aggiunti con successo.")
+
+    except FileNotFoundError:
+        logger.error(f"File dei pannelli non trovato in: {PANEL_DATA_PATH}")
+        return None
+    except Exception as e:
+        logger.error(f"Errore durante l'elaborazione del file dei pannelli: {e}")
+        return None
+
     out_dir = os.path.join(SHAPE_OUT_DIR, f"offerta_energetica_{provincia}_{comune}")
     os.makedirs(out_dir, exist_ok=True)
     out_path = os.path.join(out_dir, f"offerta_energetica_{provincia}_{comune}.shp")
-    gdf.to_file(out_path)
+
+    gdf_to_save = gdf.copy()
+    gdf_to_save.rename(columns={
+        'irradiance_kwh_mq': 'irr_kwh_mq',
+        'Prod kWh/y': 'Prod_kWh_y',
+        'Prezzo uni': 'Prz_uni',
+        'Prezzo tot': 'Prz_tot'
+    }, inplace=True)
+
+    for col in gdf_to_save.columns:
+        if len(col) > 10:
+            gdf_to_save.rename(columns={col: col[:10]}, inplace=True)
+
+    gdf_to_save.to_file(out_path)
     logger.info(f"Shapefile offerta energetica salvato in: {out_path}")
 
     if callable(cleanup_fn):
@@ -211,11 +286,14 @@ def calculate_building_irradiance(provincia, comune) -> gpd.GeoDataFrame:
 
     return gdf
 
+
 if __name__ == "__main__":
-    # Esempio di utilizzo
     provincia_esempio = "Salerno"
     comune_esempio = "Padula"
     raster_out = solar_radiation_pipeline(provincia_esempio, comune_esempio)
-    logger.info(f"Pipeline completata, raster in: {raster_out}")
-    gdf_offerta = calculate_building_irradiance(provincia_esempio, comune_esempio)
-    logger.info("Calcolo offerta energetica completato.")
+    if raster_out:
+        logger.info(f"Pipeline completata, raster in: {raster_out}")
+        gdf_offerta = calculate_building_irradiance(provincia_esempio, comune_esempio)
+        if gdf_offerta is not None:
+            logger.info("Calcolo offerta energetica completato.")
+            print(gdf_offerta[['area_mq', 'irradiance_kwh_mq', 'Ptnz PV', 'n. PV', 'Prezzo tot', 'Prod kWh/y']].head())
