@@ -1,6 +1,5 @@
 import os
 import logging
-from typing import List
 from playwright.sync_api import sync_playwright
 from bs4 import BeautifulSoup
 import pandas as pd
@@ -20,15 +19,12 @@ BASE_ARTICOLO_URL = (
 )
 NUM_ARTICOLI = 4
 OUTPUT_DIR = "../Data_Collection/csv_tables-fase1"
-OUTPUT_FILENAME = "dati_normattiva_playwright_finale.csv"
+OUTPUT_FILENAME = "dati_normattiva.csv"
 
 
 def estrai_dati_normattiva() -> pd.DataFrame:
     """
     Estrae i dati climatici dal decreto su Normattiva usando Playwright e li restituisce come DataFrame.
-
-    Returns:
-        pd.DataFrame: DataFrame con le colonne [PROVINCIA, ZONA_CLIMATICA, GRADI_GIORNO, ALTITUDINE, COMUNE].
     """
     dati_finali = []
 
@@ -108,11 +104,6 @@ def estrai_dati_normattiva() -> pd.DataFrame:
 def salva_dati_normattiva(df: pd.DataFrame, output_dir: str = OUTPUT_DIR, nome_file: str = OUTPUT_FILENAME) -> pd.DataFrame:
     """
     Salva i dati estratti da Normattiva in formato CSV.
-
-    Args:
-        df: DataFrame da salvare.
-        output_dir: Cartella di destinazione.
-        nome_file: Nome del file CSV.
     """
     if df.empty:
         logger.warning("Nessun dato da scrivere.")
@@ -136,5 +127,20 @@ def run_estrazione_normattiva() -> pd.DataFrame:
     return df
 
 
+def get_dati_normattiva() -> pd.DataFrame:
+    """
+    Ritorna il DataFrame dei dati Normattiva, estraendolo se il CSV non esiste.
+    """
+    path_csv = os.path.join(OUTPUT_DIR, OUTPUT_FILENAME)
+
+    if not os.path.exists(path_csv):
+        logger.warning(f"File non trovato. Avvio estrazione: {path_csv}")
+        return run_estrazione_normattiva()
+
+    df = pd.read_csv(path_csv, sep=";", encoding="utf-8-sig", keep_default_na=False)
+    logger.info(f"Dati caricati da: {path_csv}")
+    return df
+
+
 if __name__ == "__main__":
-    run_estrazione_normattiva()
+    get_dati_normattiva()

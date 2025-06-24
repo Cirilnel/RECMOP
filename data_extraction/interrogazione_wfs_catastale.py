@@ -1,10 +1,9 @@
-import geopandas as gpd
+import os
+import shutil
+import logging
 import requests
 import xml.etree.ElementTree as ET
-import logging
-import os
-
-from calcola_area_poligoni import calcola_area
+import geopandas as gpd
 
 # ========================
 # CONFIGURAZIONE LOGGING
@@ -14,36 +13,44 @@ logging.basicConfig(level=logging.INFO, format=LOG_FORMAT, handlers=[logging.Str
 logger = logging.getLogger(__name__)
 
 # ========================
-# COSTANTI GLOBALI
+# COSTANTI WFS
 # ========================
-BASE_DIR = os.path.abspath("..")
-INPUT_SHP = os.path.join(BASE_DIR, "FABBRICATI_geometry_only", "FABBRICATI_geom_only.shp")
-OUTPUT_DIR = os.path.join(BASE_DIR, "Data_Collection", "shapefiles_merged", "dati_catasto")
-OUTPUT_SHP = os.path.join(OUTPUT_DIR, "dati_catasto.shp")
-
 BASE_URL_WFS = 'https://wfs.cartografia.agenziaentrate.gov.it/inspire/wfs/owfs01.php'
 SRS_NAME = 'urn:ogc:def:crs:EPSG::6706'
 LANGUAGE = 'ita'
 TYPENAME = 'CP:CadastralParcel'
 
+# Contatore richieste WFS
+request_counter = 0
+
 # ========================
-# FUNZIONE: Centroidi
+# GENERA CENTROIDI
 # ========================
 def genera_centroidi_da_gdf(gdf_poligoni: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+    """Calcola i centroidi del GeoDataFrame fornito, mantenendo la colonna 'id'."""
     logger.info("Calcolo dei centroidi dai poligoni.")
 
     if 'id' not in gdf_poligoni.columns:
-        raise ValueError("Il GeoDataFrame deve contenere una colonna 'id'")
+        raise ValueError("Il GeoDataFrame deve contenere una colonna 'id'.")
 
     centroids = gdf_poligoni.geometry.centroid
-    centroids_gdf = gpd.GeoDataFrame(gdf_poligoni[['id']], geometry=centroids, crs=gdf_poligoni.crs)
+    centroids_gdf = gpd.GeoDataFrame(
+        gdf_poligoni[['id']],
+        geometry=centroids,
+        crs=gdf_poligoni.crs
+    )
     centroids_gdf = centroids_gdf.to_crs(epsg=6706)
     return centroids_gdf
 
 # ========================
-# FUNZIONE: Query WFS
+# QUERY WFS
 # ========================
-def query_catasto_point(x, y):
+def query_catasto_point(x: float, y: float) -> dict:
+    """Effettua una richiesta WFS per ottenere i dati catastali in corrispondenza di (x, y)."""
+    global request_counter
+    request_counter += 1
+    logger.info(f"Richiesta WFS n. {request_counter} - Punto: ({x}, {y})")
+
     params = {
         'SERVICE': 'WFS',
         'VERSION': '2.0.0',
@@ -53,8 +60,6 @@ def query_catasto_point(x, y):
         'BBOX': f'{y},{x},{y},{x}',
         'LANGUAGE': LANGUAGE
     }
-
-    logger.info(f"Inviando richiesta WFS per il punto: ({x}, {y})")
 
     try:
         response = requests.get(BASE_URL_WFS, params=params)
@@ -72,86 +77,117 @@ def query_catasto_point(x, y):
         }
 
         features = root.findall('.//CP:CadastralParcel', namespaces)
-        if features:
-            feature = features[0]
-            result = {
-                'INSPIREID_LOCALID': feature.find('.//CP:INSPIREID_LOCALID', namespaces).text,
-                'LABEL': feature.find('.//CP:LABEL', namespaces).text,
-                'ADMINISTRATIVEUNIT': feature.find('.//CP:ADMINISTRATIVEUNIT', namespaces).text,
-                'NATIONALCADASTRALREFERENCE': feature.find('.//CP:NATIONALCADASTRALREFERENCE', namespaces).text
-            }
-            logger.info(f"Dati catastali trovati per ({x}, {y}): {result}")
-            return result
-        else:
+        if not features:
             logger.warning(f"Nessuna particella trovata per le coordinate ({x}, {y})")
             return None
+
+        feat = features[0]
+        result = {
+            'INSPIREID_LOCALID': feat.find('.//CP:INSPIREID_LOCALID', namespaces).text,
+            'LABEL': feat.find('.//CP:LABEL', namespaces).text,
+            'ADMINISTRATIVEUNIT': feat.find('.//CP:ADMINISTRATIVEUNIT', namespaces).text,
+            'NATIONALCADASTRALREFERENCE': feat.find('.//CP:NATIONALCADASTRALREFERENCE', namespaces).text
+        }
+        # Log dei dati che verranno salvati nel shapefile
+        logger.info(f"Dati salvati shapefile ({x}, {y}): FOGLIO={result['INSPIREID_LOCALID'].split('_')[1].split('.')[0] if '_' in result['INSPIREID_LOCALID'] and '.' in result['INSPIREID_LOCALID'] else None}, "
+                    f"PARTICELLA={result['LABEL']}, COD_COMUNE={result['ADMINISTRATIVEUNIT']}")
+        return result
     except ET.ParseError as e:
         logger.error(f"Errore nel parsing XML per ({x}, {y}): {e}")
         return None
 
 # ========================
-# FUNZIONE: Salva SHP
+# GESTIONE PERCORSI
 # ========================
-def salva_shapefile_catastale(gdf: gpd.GeoDataFrame, output_path: str):
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    logger.info(f"Salvataggio shapefile con dati catastali: {output_path}")
-    gdf.to_file(output_path, driver='ESRI Shapefile')
+OUTPUT_BASE_DIR = os.path.join('..', 'Data_Collection', 'shapefiles')
+
+def get_output_paths(provincia: str, comune: str) -> tuple:
+    """Restituisce la directory e il percorso completo dello shapefile per provincia e comune (in minuscolo)."""
+    provincia = provincia.lower()
+    comune = comune.lower()
+    dir_name = f"dati_catasto_{provincia}_{comune}"
+    dir_path = os.path.join(OUTPUT_BASE_DIR, dir_name)
+    shp_name = f"{dir_name}.shp"
+    shp_path = os.path.join(dir_path, shp_name)
+    return dir_path, shp_path
 
 # ========================
-# FUNZIONE: Processa Shapefile
+# SALVA SHAPEFILE
 # ========================
-def process_shapefile(input_shp: str) -> gpd.GeoDataFrame:
-    logger.info("Lettura shapefile originale.")
-    gdf_poligoni = gpd.read_file(input_shp)
-    crs_originale = gdf_poligoni.crs  # Salva CRS originale
+def salva_shapefile_catastale(gdf: gpd.GeoDataFrame, provincia: str, comune: str):
+    """Salva il GeoDataFrame in shapefile nella directory dedicata."""
+    dir_path, shp_path = get_output_paths(provincia, comune)
+    os.makedirs(dir_path, exist_ok=True)
+    logger.info(f"Salvataggio shapefile: {shp_path}")
+    gdf.to_file(shp_path, driver='ESRI Shapefile')
 
+# ========================
+# ELABORAZIONE GEOdataframe
+# ========================
+def _process_geodataframe(gdf_poligoni: gpd.GeoDataFrame, provincia: str, comune: str) -> gpd.GeoDataFrame:
+    """Processa i poligoni: genera centroidi, effettua query catastali e associa i dati."""
+    # Assicura colonna id
     if 'id' not in gdf_poligoni.columns:
         gdf_poligoni = gdf_poligoni.reset_index().rename(columns={'index': 'id'})
 
-    gdf_centroidi = genera_centroidi_da_gdf(gdf_poligoni)
+    crs_originale = gdf_poligoni.crs
+    cent_gdf = genera_centroidi_da_gdf(gdf_poligoni)
 
-    # Prepara colonne per i dati catastali
-    gdf_centroidi['FOGLIO'] = None
-    gdf_centroidi['PARTICELLA'] = None
-    gdf_centroidi['COD_COMUNE'] = None
+    # Prepara colonne
+    cent_gdf['FOGLIO'] = None
+    cent_gdf['PARTICELLA'] = None
+    cent_gdf['COD_COMUNE'] = None
 
-    logger.info(f"Elaborazione di {len(gdf_centroidi)} centroidi...")
-    for index, row in gdf_centroidi.iterrows():
+    logger.info(f"Elaborazione di {len(cent_gdf)} richieste WFS totali.")
+    for idx, row in cent_gdf.iterrows():
         x, y = row.geometry.x, row.geometry.y
         result = query_catasto_point(x, y)
         if result:
-            # Estrai FOGLIO da INSPIREID_LOCALID
-            inspireid = result.get('INSPIREID_LOCALID', '')
+            inspireid = result['INSPIREID_LOCALID']
             foglio = inspireid.split('_')[1].split('.')[0] if '_' in inspireid and '.' in inspireid else None
-            gdf_centroidi.at[index, 'FOGLIO'] = foglio
-            gdf_centroidi.at[index, 'PARTICELLA'] = result.get('LABEL')
-            gdf_centroidi.at[index, 'COD_COMUNE'] = result.get('ADMINISTRATIVEUNIT')
+            cent_gdf.at[idx, 'FOGLIO'] = foglio
+            cent_gdf.at[idx, 'PARTICELLA'] = result.get('LABEL')
+            cent_gdf.at[idx, 'COD_COMUNE'] = result.get('ADMINISTRATIVEUNIT')
 
-    logger.info("Associazione dati catastali ai poligoni originali tramite 'id'.")
-    gdf_risultato = gdf_poligoni.merge(
-        gdf_centroidi[['id', 'FOGLIO', 'PARTICELLA', 'COD_COMUNE']],
-        on='id',
-        how='left'
+    # Unisci a poligoni
+    merged = gdf_poligoni.merge(
+        cent_gdf[['id', 'FOGLIO', 'PARTICELLA', 'COD_COMUNE']],
+        on='id', how='left'
     ).drop(columns='id')
 
-    # Reimposta CRS originale (se necessario)
-    if gdf_risultato.crs != crs_originale:
-        logger.info(f"Reimpostazione CRS originale: {crs_originale}")
-        gdf_risultato = gdf_risultato.set_crs(crs_originale, allow_override=True)
+    # Ripristina CRS
+    if merged.crs != crs_originale:
+        merged = merged.set_crs(crs_originale, allow_override=True)
 
-    # Calcola l'area dei poligoni
-    gdf_risultato = calcola_area(gdf_risultato)
-
-    return gdf_risultato
+    # Salva
+    salva_shapefile_catastale(merged, provincia, comune)
+    return merged
 
 # ========================
-# MAIN
+# FUNZIONE GET
 # ========================
-def main():
-    logger.info("Inizio elaborazione shapefile con dati catastali.")
-    gdf_finale = process_shapefile(INPUT_SHP)
-    salva_shapefile_catastale(gdf_finale, OUTPUT_SHP)
-    logger.info("Elaborazione completata.")
+def get_dati_catasto(gdf_poligoni: gpd.GeoDataFrame, provincia: str, comune: str) -> gpd.GeoDataFrame:
+    """
+    Restituisce il GeoDataFrame arricchito con i dati catastali per il comune e provincia specificati.
+    Se esiste già lo shapefile, lo carica; altrimenti lo genera.
+    """
+    dir_path, shp_path = get_output_paths(provincia, comune)
+    if os.path.exists(shp_path):
+        logger.info(f"Shapefile esistente trovato: {shp_path}. Caricamento dati.")
+        return gpd.read_file(shp_path)
+    logger.info("Nessun shapefile preesistente: avvio elaborazione dati catastali.")
+    return _process_geodataframe(gdf_poligoni, provincia, comune)
 
-if __name__ == "__main__":
-    main()
+# ========================
+# FUNZIONE REFRESH
+# ========================
+def refresh_dati_catasto(gdf_poligoni: gpd.GeoDataFrame, provincia: str, comune: str) -> gpd.GeoDataFrame:
+    """
+    Ricalcola e riscrive i dati catastali per il comune e provincia specificati,
+    sovrascrivendo eventuali dati esistenti.
+    """
+    dir_path, shp_path = get_output_paths(provincia, comune)
+    if os.path.exists(dir_path):
+        logger.info(f"Directory esistente {dir_path}: rimozione per refresh.")
+        shutil.rmtree(dir_path)
+    return _process_geodataframe(gdf_poligoni, provincia, comune)

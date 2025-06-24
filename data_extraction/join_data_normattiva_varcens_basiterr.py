@@ -2,7 +2,6 @@ import os
 import logging
 
 import pandas as pd
-import geopandas as gpd
 from rapidfuzz import process, fuzz
 
 # =============================================================================
@@ -30,9 +29,8 @@ PROV_DICT = {
     "NU": "NUORO", "CA": "CAGLIARI", "OR": "ORISTANO"
 }
 
-
-# Paths
-OUTPUT_CSV = os.path.join('../Data_Collection/csv_tables-fase1', 'join_data.csv')
+# Directory per output CSV per regione
+OUTPUT_DIR = os.path.join('..', 'Data_Collection', 'csv_tables-fase1')
 
 # =============================================================================
 # SETUP LOGGING
@@ -42,86 +40,133 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(mess
 logger = logging.getLogger(__name__)
 
 # =============================================================================
-# FUNZIONI ESTRAZIONE
+# ESTRAZIONE DATI
 # =============================================================================
 
-from normattiva import estrai_dati_normattiva
-from estrazione_dati_basi_territoriali import estrai_dati_basi_territoriali
-from estrazione_dati_variabili_censuarie import estrai_dati_variabili_censuarie
+from normattiva import get_dati_normattiva
+from estrazione_dati_basi_territoriali import get_dati_basi_territoriali
+from estrazione_dati_variabili_censuarie import get_dati_variabili_censuarie
 
 # =============================================================================
-# FUNZIONI DI ELABORAZIONE
+# ELABORAZIONE DATI
 # =============================================================================
 
-def join_data(input_path_basi_territoriali: str, input_path_variabili_censuarie: str) -> pd.DataFrame:
+def estrai_join_data(regione_input: str) -> pd.DataFrame:
+    """
+    Esegue estrazione, merge e fuzzy-matching dei dati per la regione specificata.
+    """
     # 1) Estrazione dati
-    df_base = estrai_dati_basi_territoriali(input_path_basi_territoriali)
-    df_cens = estrai_dati_variabili_censuarie(input_path_variabili_censuarie)
-    df_norm = estrai_dati_normattiva()
+    df_base = get_dati_basi_territoriali(regione_input)
+    df_cens = get_dati_variabili_censuarie(regione_input)
+    df_norm = get_dati_normattiva()
+
+    logger.info("Dati base estratti: %d righe", len(df_base))
+    logger.info("Dati censuari estratti: %d righe", len(df_cens))
+    logger.info("Dati normattivi estratti: %d righe", len(df_norm))
 
     # 2) Merge base + censuarie
     df_merged = pd.merge(df_base, df_cens, on='SEZ2011', how='inner')
     df_merged['COMUNE'] = df_merged['COMUNE'].str.upper()
-    df_norm['COMUNE']   = df_norm['COMUNE'].str.upper()
+    df_norm['COMUNE'] = df_norm['COMUNE'].str.upper()
 
     # 3) Mappa sigla provincia → nome
     df_norm['PROVINCIA'] = df_norm['PROVINCIA'].map(PROV_DICT)
-    logger.info("Province mappate in df_norm: %d di %d",
-                df_norm['PROVINCIA'].notna().sum(), len(df_norm))
+    logger.info(
+        "Province mappate in df_norm: %d di %d",
+        df_norm['PROVINCIA'].notna().sum(), len(df_norm)
+    )
 
-    # 4) Join diretto su PROVINCIA + COMUNE
+    # 4) Join diretto
     df_join = pd.merge(
         df_merged,
         df_norm,
-        on=['PROVINCIA','COMUNE'],
+        on=['PROVINCIA', 'COMUNE'],
         how='left',
         indicator=True
     )
-    direct_matched = df_join['_merge']=='both'
-    num_direct = direct_matched.sum()
-    logger.info("Comuni con corrispondenza diretta: %d/%d",
-                num_direct, len(df_merged))
+    direct_matched = df_join['_merge'] == 'both'
+    logger.info(
+        "Comuni con corrispondenza diretta: %d/%d",
+        direct_matched.sum(), len(df_merged)
+    )
 
-    # 5) Identifico i non matchati
+    # 5) Identifico non matchati
     df_unmatched = df_join.loc[~direct_matched, df_merged.columns]
-    unmatched_list = df_unmatched['COMUNE'].unique().tolist()
     logger.info("Numero comuni da fuzzy match: %d", len(df_unmatched))
-    logger.info("Elenco comuni non matchati direttamente: %s", unmatched_list)
 
-    # 6) Preparo df_final con i matched
+    # 6) Preparo df_final con matched diretti
     df_final = df_join.loc[direct_matched].drop(columns=['_merge'])
 
     # 7) Fuzzy match limitato alla provincia
     for idx, row in df_unmatched.iterrows():
         prov = row['PROVINCIA']
         target = row['COMUNE']
-        candidates = df_norm.loc[df_norm['PROVINCIA']==prov, 'COMUNE'].unique()
-        if not len(candidates):
-            logger.warning("Nessun candidato fuzzy per provincia %s (riga %s)", prov, idx)
+        candidates = df_norm.loc[df_norm['PROVINCIA'] == prov, 'COMUNE'].unique()
+        if candidates.size == 0:
+            logger.warning(
+                "Nessun candidato fuzzy per provincia %s (riga %s)", prov, idx
+            )
             continue
 
         best, score, _ = process.extractOne(
-            query=target,
-            choices=candidates,
-            scorer=fuzz.token_sort_ratio
+            target, candidates, scorer=fuzz.token_sort_ratio
         )
 
         if score >= THRESHOLD:
             norm_row = df_norm[
-                (df_norm['PROVINCIA']==prov) & (df_norm['COMUNE']==best)
+                (df_norm['PROVINCIA'] == prov) & (df_norm['COMUNE'] == best)
             ].iloc[0]
-            merged_row = pd.concat([row, norm_row.drop(['PROVINCIA','COMUNE'])])
+            merged_row = pd.concat([row, norm_row.drop(['PROVINCIA', 'COMUNE'])])
             df_final = pd.concat([df_final, merged_row.to_frame().T], ignore_index=True)
-            logger.info("Fuzzy match: '%s'→'%s' (score %d)", target, best, score)
+            logger.info("Fuzzy match: '%s' → '%s' (score %d)", target, best, score)
         else:
-            logger.warning("Fuzzy LOW score per '%s' in %s: '%s' (%d)",
-                           target, prov, best, score)
-    logger.info("Comuni fuzzy matchati: %d/%d", len(df_final), len(df_merged))
+            logger.warning(
+                "Fuzzy LOW score per '%s' in %s: '%s' (%d)",
+                target, prov, best, score
+            )
 
+    logger.info("Comuni fuzzy matchati: %d/%d", len(df_final), len(df_merged))
     return df_final
 
-def salva_join_data(df: pd.DataFrame, path: str = OUTPUT_CSV) -> None:
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    df.to_csv(path, index=False, sep=';', encoding='utf-8-sig')
-    logger.info("Salvato CSV fase1 in %s", path)
 
+def salva_join_data(df: pd.DataFrame, regione_input: str, output_dir: str = OUTPUT_DIR) -> str:
+    """
+    Salva il DataFrame come CSV join_data_{regione minuscolo}.csv e restituisce il path.
+    """
+    os.makedirs(output_dir, exist_ok=True)
+    safe_region = regione_input.replace(' ', '_').lower()
+    filename = f"join_data_{safe_region}.csv"
+    path = os.path.join(output_dir, filename)
+    df.to_csv(path, index=False, sep=';', encoding='utf-8-sig')
+    logger.info("Salvato CSV fase1 per %s in %s", regione_input, path)
+    return path
+
+
+def get_join_data(regione_input: str) -> pd.DataFrame:
+    """
+    Restituisce il DataFrame joinato per la regione. Legge il CSV esistente o lo genera.
+    """
+    safe_region = regione_input.replace(' ', '_').lower()
+    filename = f"join_data_{safe_region}.csv"
+    path = os.path.join(OUTPUT_DIR, filename)
+    if os.path.isfile(path):
+        logger.info("File esistente trovato per %s: %s", regione_input, path)
+        return pd.read_csv(path, sep=';', encoding='utf-8-sig')
+    else:
+        logger.info("File non trovato per %s: creo e salvo", regione_input)
+        df = estrai_join_data(regione_input)
+        salva_join_data(df, regione_input, output_dir=OUTPUT_DIR)
+        return df
+
+def refresh_join_data(regione_input: str) -> pd.DataFrame:
+    """
+    Ricalcola e salva i dati joinati per la regione specificata.
+    """
+    logger.info("Ricalcolo join data per %s...", regione_input)
+    df = estrai_join_data(regione_input)
+    salva_join_data(df, regione_input, output_dir=OUTPUT_DIR)
+    return df
+
+if __name__ == "__main__":
+    regione = "Campania"
+    df_joined = get_join_data(regione)

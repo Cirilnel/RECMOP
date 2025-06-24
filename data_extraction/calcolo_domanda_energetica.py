@@ -1,13 +1,12 @@
-# calcolo_domanda_energetica.py
-
 import os
 import pandas as pd
 import geopandas as gpd
 import logging
 
-from join_data_normattiva_varcens_basiterr import join_data, salva_join_data
-from siape_zc_range import estrai_dati_siape
-from interrogazione_wfs_catastale import process_shapefile
+from join_data_normattiva_varcens_basiterr import get_join_data
+from data_extraction_siape.siape_zc_range import get_dati_siape
+from calcola_area_poligoni import calcola_area
+from interrogazione_wfs_catastale import get_dati_catasto
 
 # === CONFIGURAZIONE LOGGING ===
 logging.basicConfig(
@@ -16,26 +15,86 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# === Percorsi input ===
-INPUT_PATH_BASI_TERRITORIALI = os.path.join('..', 'Istat', 'Regioni', 'Campania', 'R15_11_WGS84.dbf')
-INPUT_PATH_VARIABILI_CENSUARIE = os.path.join("..", "Istat", "Variabili_Censuarie", "Sezioni_di_Censimento", "Campania.csv")
-INPUT_SHP_FABBRICATI = os.path.join('..', 'FABBRICATI_geometry_only', 'FABBRICATI_geom_only.shp')
-OUTPUT_PATH = os.path.join('..', 'Data_Collection', 'shapefiles_merged', 'domanda_energetica', 'domanda_energetica.shp')
+# =============================================================================
+# FUNZIONI AUSILIARIE
+# =============================================================================
+
+def get_regione_from_provincia(provincia: str) -> str:
+    """
+    Mappa il nome di una provincia alla sua regione italiana.
+    """
+    provincia = provincia.strip().upper()
+
+    mappa_provincia_regione = {
+        # Piemonte
+        "TORINO": "PIEMONTE", "VERCELLI": "PIEMONTE", "BIELLA": "PIEMONTE", "CUNEO": "PIEMONTE",
+        "ASTI": "PIEMONTE", "ALESSANDRIA": "PIEMONTE", "NOVARA": "PIEMONTE",
+        # Valle d'Aosta
+        "AOSTA": "VALLE D'AOSTA",
+        # Lombardia
+        "VARESE": "LOMBARDIA", "COMO": "LOMBARDIA", "SONDRIO": "LOMBARDIA", "MILANO": "LOMBARDIA",
+        "BERGAMO": "LOMBARDIA", "BRESCIA": "LOMBARDIA", "PAVIA": "LOMBARDIA", "CREMONA": "LOMBARDIA",
+        "MANTOVA": "LOMBARDIA",
+        # Trentino-Alto Adige
+        "BOLZANO": "TRENTINO-ALTO ADIGE", "TRENTO": "TRENTINO-ALTO ADIGE",
+        # Veneto
+        "VERONA": "VENETO", "VICENZA": "VENETO", "BELLUNO": "VENETO", "TREVISO": "VENETO",
+        "VENEZIA": "VENETO", "PADOVA": "VENETO", "ROVIGO": "VENETO",
+        # Friuli-Venezia Giulia
+        "UDINE": "FRIULI-VENEZIA GIULIA", "GORIZIA": "FRIULI-VENEZIA GIULIA",
+        "TRIESTE": "FRIULI-VENEZIA GIULIA", "PORDENONE": "FRIULI-VENEZIA GIULIA",
+        # Liguria
+        "IMPERIA": "LIGURIA", "SAVONA": "LIGURIA", "GENOVA": "LIGURIA", "LA SPEZIA": "LIGURIA",
+        # Emilia-Romagna
+        "PIACENZA": "EMILIA-ROMAGNA", "PARMA": "EMILIA-ROMAGNA", "REGGIO EMILIA": "EMILIA-ROMAGNA",
+        "MODENA": "EMILIA-ROMAGNA", "BOLOGNA": "EMILIA-ROMAGNA", "FERRARA": "EMILIA-ROMAGNA",
+        "RAVENNA": "EMILIA-ROMAGNA", "FORLÌ-CESENA": "EMILIA-ROMAGNA",
+        # Toscana
+        "MASSA-CARRARA": "TOSCANA", "LUCCA": "TOSCANA", "PISTOIA": "TOSCANA", "FIRENZE": "TOSCANA",
+        "LIVORNO": "TOSCANA", "PISA": "TOSCANA", "AREZZO": "TOSCANA", "SIENA": "TOSCANA", "GROSSETO": "TOSCANA",
+        # Umbria
+        "PERUGIA": "UMBRIA", "TERNI": "UMBRIA",
+        # Marche
+        "PESARO E URBINO": "MARCHE", "ANCONA": "MARCHE", "MACERATA": "MARCHE", "ASCOLI PICENO": "MARCHE",
+        # Lazio
+        "VITERBO": "LAZIO", "RIETI": "LAZIO", "ROMA": "LAZIO", "LATINA": "LAZIO", "FROSINONE": "LAZIO",
+        # Abruzzo
+        "L'AQUILA": "ABRUZZO", "TERAMO": "ABRUZZO", "PESCARA": "ABRUZZO", "CHIETI": "ABRUZZO",
+        # Molise
+        "CAMPOBASSO": "MOLISE", "ISERNIA": "MOLISE",
+        # Campania
+        "CASERTA": "CAMPANIA", "BENEVENTO": "CAMPANIA", "NAPOLI": "CAMPANIA",
+        "AVELLINO": "CAMPANIA", "SALERNO": "CAMPANIA",
+        # Puglia
+        "FOGGIA": "PUGLIA", "BARI": "PUGLIA", "TARANTO": "PUGLIA",
+        "BRINDISI": "PUGLIA", "LECCE": "PUGLIA",
+        # Basilicata
+        "POTENZA": "BASILICATA", "MATERA": "BASILICATA",
+        # Calabria
+        "COSENZA": "CALABRIA", "CATANZARO": "CALABRIA", "REGGIO CALABRIA": "CALABRIA",
+        # Sicilia
+        "TRAPANI": "SICILIA", "PALERMO": "SICILIA", "MESSINA": "SICILIA", "AGRIGENTO": "SICILIA",
+        "CALTANISSETTA": "SICILIA", "ENNA": "SICILIA", "CATANIA": "SICILIA", "RAGUSA": "SICILIA", "SIRACUSA": "SICILIA",
+        # Sardegna
+        "SASSARI": "SARDEGNA", "NUORO": "SARDEGNA", "CAGLIARI": "SARDEGNA", "ORISTANO": "SARDEGNA"
+    }
+
+    if provincia not in mappa_provincia_regione:
+        raise ValueError(f"Provincia '{provincia}' non riconosciuta o non presente in mappa.")
+
+    return mappa_provincia_regione[provincia]
+
+# =============================================================================
+# FUNZIONI DI CALCOLO
+# =============================================================================
 
 def calcola_coefficiente_domanda(df_join: pd.DataFrame, df_siape: pd.DataFrame, comune: str, provincia: str) -> float:
-    """
-    Calcola il coefficiente medio pesato della domanda energetica EPgl_nren
-    per un comune, tenendo conto del numero di edifici per classe d'età
-    e del coefficiente corrispondente.
-    """
     logger.info(f"Calcolo coefficiente domanda per {comune} ({provincia})...")
 
     df_comune = df_join[
         (df_join['COMUNE'].str.upper() == comune.upper()) &
         (df_join['PROVINCIA'].str.upper() == provincia.upper())
     ]
-
-    logger.info(f"Numero di sezioni trovate per {comune}: {len(df_comune)}")
 
     if df_comune.empty:
         raise ValueError(f"Nessun dato trovato per il comune {comune} nella provincia {provincia}.")
@@ -52,8 +111,6 @@ def calcola_coefficiente_domanda(df_join: pd.DataFrame, df_siape: pd.DataFrame, 
     b5 = somma_colonne('E16')
 
     totale_edifici = b1 + b2 + b3 + b4 + b5
-    logger.info(f"Totale edifici: {totale_edifici} (b1={b1}, b2={b2}, b3={b3}, b4={b4}, b5={b5})")
-
     if totale_edifici == 0:
         raise ValueError(f"Totale edifici nullo per il comune {comune}.")
 
@@ -61,7 +118,6 @@ def calcola_coefficiente_domanda(df_join: pd.DataFrame, df_siape: pd.DataFrame, 
     if len(zc) != 1:
         raise ValueError(f"Zona climatica ambigua o mancante per {comune}. Valori trovati: {zc}")
     zc = zc[0]
-    logger.info(f"Zona climatica rilevata: {zc}")
 
     df_zc = df_siape[df_siape['zona_climatica'] == zc]
     if df_zc.empty:
@@ -79,56 +135,80 @@ def calcola_coefficiente_domanda(df_join: pd.DataFrame, df_siape: pd.DataFrame, 
     epgl_nren_4 = get_coeff(df_zc, 'kE14E15')
     epgl_nren_5 = get_coeff(df_zc, 'kE16')
 
-    logger.info(f"Coefficiente EPgl_nren per periodo: "
-                f"1={epgl_nren_1}, 2={epgl_nren_2}, 3={epgl_nren_3}, "
-                f"4={epgl_nren_4}, 5={epgl_nren_5}")
-
     coefficiente_domanda = (
         (b1 * epgl_nren_1 + b2 * epgl_nren_2 + b3 * epgl_nren_3 +
          b4 * epgl_nren_4 + b5 * epgl_nren_5) / totale_edifici
     )
 
-    logger.info(f"Coefficiente calcolato: {coefficiente_domanda:.2f}")
     return round(coefficiente_domanda, 2)
 
 
 def calcola_domanda_energetica(comune: str, provincia: str) -> gpd.GeoDataFrame:
-    """
-    Funzione principale: carica i dati, calcola il coefficiente di domanda
-    energetica per un comune e lo stampa.
-    """
     logger.info("Inizio calcolo domanda energetica...")
 
-    df_join = join_data(INPUT_PATH_BASI_TERRITORIALI, INPUT_PATH_VARIABILI_CENSUARIE)
-    logger.info("Dati unificati caricati correttamente.")
+    comune = comune.strip().upper()
+    provincia = provincia.strip().upper()
+    regione = get_regione_from_provincia(provincia)
 
-    df_siape = estrai_dati_siape()
-    logger.info("Dati SIAPE caricati correttamente.")
+    # Carico dati unificati
+    df_join = get_join_data(regione.lower())
+    logger.info("Dati unificati caricati.")
 
-    # Dovrei eseguire process_shapefile, ma per velocizzare uso il file shp già processato
-    # df_fabbricati = process_shapefile(INPUT_SHP_FABBRICATI)
+    # Carico dati SIAPE
+    df_siape = get_dati_siape()
+    logger.info("Dati SIAPE caricati.")
+
+    # Costruisco il percorso dinamico per lo shapefile dei fabbricati
+    prov_safe = provincia.lower().replace(' ', '_')
+    comm_safe = comune.lower().replace(' ', '_')
+    shp_dir = os.path.join('..', 'FABBRICATI', f'fabbricati_{prov_safe}_{comm_safe}')
+    if not os.path.isdir(shp_dir):
+        raise FileNotFoundError(f"Directory shapefile non trovata: {shp_dir}")
+
+    shp_files = [f for f in os.listdir(shp_dir) if f.lower().endswith('.shp')]
+    if len(shp_files) != 1:
+        raise ValueError(f"Atteso un unico file .shp in {shp_dir}, trovati: {shp_files}")
+    shp_path = os.path.join(shp_dir, shp_files[0])
+
     try:
-        gdf_fabbricati = gpd.read_file(
-            os.path.join('..', 'Data_Collection', 'shapefiles_merged', 'dati_catasto', 'dati_catasto.shp')
-        )
-        logger.info("Shapefile fabbricati caricato con successo.")
+        gdf_fabbricati = gpd.read_file(shp_path)
+        logger.info(f"Shapefile fabbricati caricato da {shp_path}.")
     except Exception as e:
-        logger.warning(f"Errore nel caricamento shapefile fabbricati: {e}")
+        logger.warning(f"Errore caricamento shapefile fabbricati: {e}")
         gdf_fabbricati = None
 
-    coefficiente_domanda = calcola_coefficiente_domanda(df_join, df_siape, comune, provincia)
-    logger.info(f"Il coefficiente di domanda energetica per il comune di Padula (SA) è: {coefficiente_domanda}")
+    # Calcolo area edifici
+    gdf_fabbricati = calcola_area(gdf_fabbricati, nome_colonna='area_mq')
 
-    #aggiungi a gdf_fabbricati una colonna 'DOMANDA_ENERGETICA' data da area_mq moltiplicata per coefficiente_domanda
+    # Calcolo coefficiente domanda
+    coeff_dom = calcola_coefficiente_domanda(df_join, df_siape, comune, provincia)
+    logger.info(f"Coefficiente domanda per {comune} ({provincia}): {coeff_dom} kWh/mq/anno")
+
+    # Configuro directory e path output dinamicamente
+    out_dir = os.path.join(
+        '..', 'Data_Collection', 'shapefiles',
+        f'domanda_energetica_{prov_safe}_{comm_safe}'
+    )
+    os.makedirs(out_dir, exist_ok=True)
+    out_shp = os.path.join(
+        out_dir,
+        f'domanda_energetica_{prov_safe}_{comm_safe}.shp'
+    )
+
     if gdf_fabbricati is not None:
-        gdf_fabbricati['domanda_en'] = gdf_fabbricati['area_mq'] * coefficiente_domanda
-        logger.info("Colonna DOMANDA_ENERGETICA aggiunta allo shapefile fabbricati.")
+        # Aggiungo colonna domanda energetica
+        gdf_fabbricati['domanda_en'] = gdf_fabbricati['area_mq'] * coeff_dom
+        logger.info("Colonna domanda energetica aggiunta.")
 
-        # Salva il risultato in un nuovo file shapefile
-        gdf_fabbricati.to_file(OUTPUT_PATH, driver='ESRI Shapefile')
-        logger.info(f"Shapefile con domanda energetica salvato in {OUTPUT_PATH}")
+        # Aggiungo informazioni catastali
+        gdf_fabbricati = get_dati_catasto(gdf_fabbricati, provincia, comune)
+
+        # Salvo shapefile di output
+        gdf_fabbricati.to_file(out_shp, driver='ESRI Shapefile')
+        logger.info(f"Shapefile con domanda energetica salvato in {out_shp}")
 
     return gdf_fabbricati
 
 if __name__ == '__main__':
-    calcola_domanda_energetica('PADULA', 'SALERNO')
+    # Esempio di utilizzo
+    gdf = calcola_domanda_energetica('PADULA', 'SALERNO')

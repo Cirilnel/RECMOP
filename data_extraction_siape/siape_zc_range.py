@@ -114,6 +114,27 @@ def run_estrazione_siape() -> pd.DataFrame:
     logger.info(f"Esportazione completata: {len(df)} record scritti.")
     return df
 
+def get_dati_siape() -> pd.DataFrame:
+    """
+    Carica il DataFrame da file CSV se esiste, altrimenti esegue l’estrazione.
+
+    Args:
+        filename (str): Nome del file CSV da caricare o generare.
+        sep (str): Separatore usato nel CSV.
+
+    Returns:
+        pd.DataFrame: DataFrame con i dati SIAPE.
+    """
+    percorso_output = os.path.join(OUTPUT_DIR, OUTPUT_FILENAME)
+
+    if os.path.exists(percorso_output):
+        logger.info(f"Dati SIAPE già presenti: {percorso_output}")
+        df = pd.read_csv(percorso_output, sep=';' , encoding='utf-8')
+        return df
+
+    logger.info("Dati SIAPE non trovati, avvio estrazione...")
+    return run_estrazione_siape()
+
 
 if __name__ == '__main__':
-    run_estrazione_siape()
+    get_dati_siape()
