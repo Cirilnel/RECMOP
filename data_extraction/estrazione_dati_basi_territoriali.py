@@ -8,21 +8,38 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Costanti
-INPUT_PATH = os.path.join('..', 'Istat', 'Regioni', 'Campania', 'R15_11_WGS84.dbf')
+BASE_INPUT_DIR = os.path.join("..", "Istat", "Regioni")
 OUTPUT_DIR = "../Data_Collection/csv_tables-fase1"
-OUTPUT_FILENAME = "basi_territoriali_R15_Campania.csv"
 CAMPI_ESTRATTI = ['COD_REG', 'COD_ISTAT', 'PRO_COM', 'SEZ2011', 'SEZ', 'COD_LOC', 'TIPO_LOC']
+
+
+def trova_dbf_in_regione(regione: str) -> str:
+    """
+    Trova il file .dbf all'interno della cartella della regione specificata.
+
+    Args:
+        regione: Nome della regione (es. "Campania")
+
+    Returns:
+        Percorso completo al file .dbf
+
+    Raises:
+        FileNotFoundError: Se nessun file DBF viene trovato.
+    """
+    cartella = os.path.join(BASE_INPUT_DIR, regione)
+    dbf_files = [f for f in os.listdir(cartella) if f.lower().endswith(".dbf")]
+
+    if not dbf_files:
+        raise FileNotFoundError(f"Nessun file DBF trovato nella cartella: {cartella}")
+    if len(dbf_files) > 1:
+        logger.warning(f"Trovati più file DBF in {cartella}, verrà usato il primo: {dbf_files[0]}")
+
+    return os.path.join(cartella, dbf_files[0])
 
 
 def estrai_dati_basi_territoriali(percorso_file: str) -> pd.DataFrame:
     """
     Estrae i campi territoriali specificati da un file DBF.
-
-    Args:
-        percorso_file: Percorso al file DBF.
-
-    Returns:
-        DataFrame con i campi selezionati convertiti in int64 se possibile.
     """
     table = DBF(percorso_file, load=True, ignorecase=True, recfactory=dict)
     records = []
@@ -33,10 +50,9 @@ def estrai_dati_basi_territoriali(percorso_file: str) -> pd.DataFrame:
 
     df = pd.DataFrame(records)
 
-    # Conversione colonne a intero dove possibile
     for col in df.columns:
         try:
-            df[col] = df[col].astype('int64')
+            df[col] = df[col].astype("int64")
         except (ValueError, TypeError):
             logger.warning(f"Colonna non convertita a intero: {col}")
 
@@ -47,13 +63,6 @@ def salva_dati_basi_territoriali(df: pd.DataFrame, cartella_output: str, nome_fi
                                  sep: str = ';', encoding: str = 'utf-8-sig') -> None:
     """
     Salva un DataFrame in formato CSV.
-
-    Args:
-        df: DataFrame da salvare.
-        cartella_output: Cartella di destinazione.
-        nome_file: Nome del file CSV.
-        sep: Separatore.
-        encoding: Codifica del file.
     """
     os.makedirs(cartella_output, exist_ok=True)
     output_path = os.path.join(cartella_output, nome_file)
@@ -61,14 +70,45 @@ def salva_dati_basi_territoriali(df: pd.DataFrame, cartella_output: str, nome_fi
     logger.info(f"Dati estratti e salvati in: {output_path}")
 
 
-def run_estrazione_basi_territoriali() -> pd.DataFrame:
+def run_estrazione_basi_territoriali(regione: str) -> pd.DataFrame:
     """
-    Funzione principale per l'estrazione e il salvataggio dei dati delle basi territoriali.
+    Estrae e salva i dati delle basi territoriali per una data regione.
+
+    Args:
+        regione: Nome della regione (es. "Campania")
+
+    Returns:
+        DataFrame estratto.
     """
-    df_estratto = estrai_dati_basi_territoriali(INPUT_PATH)
-    salva_dati_basi_territoriali(df_estratto, cartella_output=OUTPUT_DIR, nome_file=OUTPUT_FILENAME)
+    input_path = trova_dbf_in_regione(regione)
+    output_filename = f"basi_territoriali_{regione.lower()}.csv"
+
+    df_estratto = estrai_dati_basi_territoriali(input_path)
+    salva_dati_basi_territoriali(df_estratto, cartella_output=OUTPUT_DIR, nome_file=output_filename)
     return df_estratto
 
 
+def get_dati_basi_territoriali(regione: str) -> pd.DataFrame:
+    """
+    Restituisce il DataFrame delle basi territoriali, estraendolo se non esiste il CSV.
+
+    Args:
+        regione: Nome della regione
+
+    Returns:
+        DataFrame
+    """
+    output_filename = f"basi_territoriali_{regione.lower()}.csv"
+    path_csv = os.path.join(OUTPUT_DIR, output_filename)
+
+    if not os.path.exists(path_csv):
+        logger.warning(f"File CSV non trovato. Avvio estrazione per la regione: {regione}")
+        return run_estrazione_basi_territoriali(regione)
+
+    df = pd.read_csv(path_csv, sep=';', encoding='utf-8-sig')
+    logger.info(f"Dati caricati da: {path_csv}")
+    return df
+
+
 if __name__ == '__main__':
-    run_estrazione_basi_territoriali()
+    get_dati_basi_territoriali("Campania")
