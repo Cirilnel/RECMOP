@@ -1,0 +1,13 @@
+<PAMDataset>
+  <PAMRasterBand band="1">
+    <Description>irradianza_media_annua_kwh</Description>
+    <Metadata>
+      <MDI key="STATISTICS_APPROXIMATE">YES</MDI>
+      <MDI key="STATISTICS_MINIMUM">165.53131135855</MDI>
+      <MDI key="STATISTICS_MAXIMUM">1947.5991239056</MDI>
+      <MDI key="STATISTICS_MEAN">1399.7106818754</MDI>
+      <MDI key="STATISTICS_STDDEV">265.99844508207</MDI>
+      <MDI key="STATISTICS_VALID_PERCENT">1.034</MDI>
+    </Metadata>
+  </PAMRasterBand>
+</PAMDataset>
