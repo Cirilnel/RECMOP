@@ -14,20 +14,20 @@ from typing import Tuple
 
 import geopandas as gpd
 import pandas as pd
-from shapely.geometry.base import BaseGeometry
-from shapely.geometry import Polygon, MultiPolygon
-
-# Percorsi di default
-INPUT_NEG = "../ESEMPIO_Model_Builder_Args/NEB_mb.shp"
-INPUT_POS = "../ESEMPIO_Model_Builder_Args/PEB_mb.shp"
-OUTPUT_NED2 = "../ESEMPIO_Model_Builder_Args/output/OUTPUT_NED2.shp"
-OUTPUT_PED2 = "../ESEMPIO_Model_Builder_Args/output/OUTPUT_PED2.shp"
-NEW_NED = "../ESEMPIO_Model_Builder_Args/output/NEW_NED.shp"
-NEW_PED = "../ESEMPIO_Model_Builder_Args/output/NEW_PED.shp"
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
+
+def safe_read_file(path: str, label: str) -> gpd.GeoDataFrame:
+    """Carica un file shapefile/GeoPackage in modo sicuro con logging e gestione errori."""
+    try:
+        gdf = gpd.read_file(path)
+        logger.info("Caricato '%s' (%d feature) da %s", label, len(gdf), path)
+        return gdf
+    except Exception as e:
+        logger.error("Errore nel caricamento di '%s': %s", label, e)
+        sys.exit(1)
 
 
 def check_required_columns(gdf: gpd.GeoDataFrame, required: list, layer_name: str) -> None:
@@ -68,10 +68,10 @@ def load_and_validate_inputs(args: argparse.Namespace) -> Tuple[gpd.GeoDataFrame
     Carica i layer input e ne verifica colonne, CRS, geometrie e ID.
     Restituisce due GeoDataFrame (negativo, positivo).
     """
-    neg = gpd.read_file(args.input_neg)
-    pos = gpd.read_file(args.input_pos)
-    check_required_columns(neg, ["ID_N", "Deficit"], "input_negativo")
-    check_required_columns(pos, ["ID_P", "Surplus"], "input_positivo")
+    neg = safe_read_file(args.input_neg, "input_negativo")
+    pos = safe_read_file(args.input_pos, "input_positivo")
+    check_required_columns(neg, ["ID_N", "deficit"], "input_negativo")
+    check_required_columns(pos, ["ID_P", "surplus"], "input_positivo")
     if neg.crs != pos.crs:
         pos = pos.to_crs(neg.crs)
         logger.info("Riproiettato 'input_positivo' in CRS di 'input_negativo'")
@@ -94,7 +94,7 @@ def perform_spatial_join(
         how="left",
         distance_col="distance"
     )
-    for field in ["ID_N", "Deficit"]:
+    for field in ["ID_N", "deficit"]:
         right = f"{field}_right"
         if right in joined:
             joined[field] = joined[right]
@@ -107,9 +107,9 @@ def calculate_delta_fields(
     gdf: gpd.GeoDataFrame
 ) -> gpd.GeoDataFrame:
     """
-    Calcola il campo 'DELTA' = Surplus + Deficit.
+    Calcola il campo 'DELTA' = surplus + deficit.
     """
-    gdf["DELTA"] = gdf["Surplus"].fillna(0) + gdf["Deficit"].fillna(0)
+    gdf["DELTA"] = gdf["surplus"].fillna(0) + gdf["deficit"].fillna(0)
     return gdf
 
 
@@ -177,37 +177,39 @@ def cleanup_attributes(
     ned2: gpd.GeoDataFrame,
     ped2: gpd.GeoDataFrame
 ) -> Tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
-    """
-    Rimuove campi intermedi e aggiorna ID e valori secondo logica QGIS.
-    """
-    ned2["Deficit2"] = ned2.apply(
-        lambda r: r["DELTA"] if pd.isna(r.get("Deficit")) else r.get("Deficit"),
-        axis=1
-    )
-    ned2["ID_N2"] = (
-        ned2["ID_N"].fillna("").astype(str)
-        + ","
-        + ned2["ID_P"].fillna("").astype(str)
-    )
-    for fld in ["Deficit", "Surplus", "ID_P", "DELTA", "Agr", "max_delta", "delta2", "index"]:
-        if fld in ned2.columns:
-            ned2.drop(columns=[fld], inplace=True)
-    ned2["Deficit"] = ned2.pop("Deficit2")
-    ned2["ID_N"] = ned2.pop("ID_N2")
-    ped2["Surplus2"] = ped2.apply(
-        lambda r: r["DELTA"] if not pd.isna(r.get("DELTA")) else r.get("Surplus"), axis=1
-    )
-    ped2["ID_P2"] = (
-        ped2["ID_P"].fillna("").astype(str)
-        + ","
-        + ped2["ID_N"].fillna("").astype(str)
-    )
-    for fld in ["Deficit", "Surplus", "ID_N", "DELTA", "Agr", "max_delta", "delta2", "index"]:
-        if fld in ped2.columns:
-            ped2.drop(columns=[fld], inplace=True)
-    ped2["Surplus"] = ped2.pop("Surplus2")
-    ped2["ID_P"] = ped2.pop("ID_P2")
+    """Rimuove campi intermedi e aggiorna ID e valori secondo logica QGIS."""
+
+    def aggiorna(gdf, campo_val: str, campo_id: str, neg: bool = True):
+        altro_id = f"ID_{'P' if campo_id == 'ID_N' else 'N'}"
+
+        # Valore aggiornato: usa DELTA se disponibile, altrimenti il campo originale
+        gdf[f"{campo_val}2"] = gdf.apply(
+            lambda r: r["DELTA"] if pd.notna(r.get("DELTA")) else r.get(campo_val),
+            axis=1
+        )
+
+        # ID concatenato (senza virgola finale se mancante)
+        def build_id(r):
+            id1 = str(r[campo_id]) if pd.notna(r.get(campo_id)) else ""
+            id2 = str(r[altro_id]) if pd.notna(r.get(altro_id)) else ""
+            return ",".join([x for x in [id1, id2] if x])
+
+        gdf[f"{campo_id}2"] = gdf.apply(build_id, axis=1)
+
+        # Pulizia colonne vecchie
+        for fld in ["deficit", "surplus", "ID_P", "ID_N", "DELTA", "Agr", "max_delta", "delta2", "index"]:
+            if fld in gdf.columns:
+                gdf.drop(columns=fld, inplace=True)
+
+        # Rinominazione finale
+        gdf[campo_val] = gdf.pop(f"{campo_val}2")
+        gdf[campo_id] = gdf.pop(f"{campo_id}2")
+        return gdf
+
+    ned2 = aggiorna(ned2, "deficit", "ID_N", neg=True)
+    ped2 = aggiorna(ped2, "surplus", "ID_P", neg=False)
     return ned2, ped2
+
 
 
 def save_outputs(
@@ -225,34 +227,64 @@ def save_outputs(
         if outdir and not os.path.isdir(outdir):
             os.makedirs(outdir, exist_ok=True)
     ned2.to_file(args.output_ned2)
-    logger.info("✔ OutputNed2 salvato in: %s", args.output_ned2)
+    logger.info("OutputNed2 salvato in: %s", args.output_ned2)
     ped2.to_file(args.output_ped2)
-    logger.info("✔ OutputPed2 salvato in: %s", args.output_ped2)
+    logger.info("OutputPed2 salvato in: %s", args.output_ped2)
     new_ned.to_file(args.new_ned)
-    logger.info("✔ NewNed salvato in: %s", args.new_ned)
+    logger.info("NewNed salvato in: %s", args.new_ned)
     new_ped.to_file(args.new_ped)
-    logger.info("✔ NewPed salvato in: %s", args.new_ped)
+    logger.info("NewPed salvato in: %s", args.new_ped)
 
 
-def main(args: argparse.Namespace) -> None:
+def processa_interazione_peb_neb(provincia: str, comune: str) -> None:
+    """
+    Esegue l'interazione PEB-NEB per una specifica coppia provincia-comune,
+    costruendo i percorsi input/output sulla base della struttura dei file.
+    Salva gli shapefile con nomi file in minuscolo.
+    """
+    def normalize(s: str) -> str:
+        return s.lower().replace(" ", "_")
+
+    prov_com = f"{normalize(provincia)}_{normalize(comune)}"
+    BASE_DIR = os.path.join("..", "model_builder_shapefiles", prov_com)
+
+    # Costruzione percorsi input
+    input_neg_dir = os.path.join(BASE_DIR, "input", "neb")
+    input_pos_dir = os.path.join(BASE_DIR, "input", "peb")
+    input_neg = os.path.join(input_neg_dir, f"NEB_{provincia}_{comune}.shp")
+    input_pos = os.path.join(input_pos_dir, f"PEB_{provincia}_{comune}.shp")
+
+    # Costruzione percorsi output (uso nomi file minuscoli)
+    prov_norm = normalize(provincia)
+    com_norm = normalize(comune)
+    output_ned = os.path.join(BASE_DIR, "output", "neb", f"outneb_{prov_norm}_{com_norm}.shp")
+    output_ped = os.path.join(BASE_DIR, "output", "peb", f"outpeb_{prov_norm}_{com_norm}.shp")
+    new_ned = os.path.join(BASE_DIR, "new", "neb", f"newneb_{prov_norm}_{com_norm}.shp")
+    new_ped = os.path.join(BASE_DIR, "new", "peb", f"newpeb_{prov_norm}_{com_norm}.shp")
+
+    # Costruzione oggetto args fittizio
+    args = argparse.Namespace(
+        input_neg=input_neg,
+        input_pos=input_pos,
+        output_ned2=output_ned,
+        output_ped2=output_ped,
+        new_ned=new_ned,
+        new_ped=new_ped
+    )
+
+    # Esecuzione logica
     neg, pos = load_and_validate_inputs(args)
     pos_joined = perform_spatial_join(pos, neg)
     pos_delta = calculate_delta_fields(pos_joined)
-    ned2, ped2, new_ned, new_ped = generate_outputs(pos_delta, neg, pos)
+    ned2, ped2, new_ned_gdf, new_ped_gdf = generate_outputs(pos_delta, neg, pos)
     ned2_clean, ped2_clean = cleanup_attributes(ned2, ped2)
-    save_outputs(args, ned2_clean, ped2_clean, new_ned, new_ped)
-    logger.info("Processamento completato con successo.")
+    save_outputs(args, ned2_clean, ped2_clean, new_ned_gdf, new_ped_gdf)
+    logger.info("Totale record OUTPUT_NED2: %d", len(ned2_clean))
+    logger.info("Totale record OUTPUT_PED2: %d", len(ped2_clean))
+    logger.info("Totale record NEW_NED: %d", len(new_ned_gdf))
+    logger.info("Totale record NEW_PED: %d", len(new_ped_gdf))
+    logger.info("Interazione completata per %s (%s)", comune, provincia)
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Interazione PEB-NEB: calcola output NED2, PED2, NEW_NED, NEW_PED"
-    )
-    parser.add_argument("--input_neg", default=INPUT_NEG, help="Percorso al layer negativo (shp/gpkg)")
-    parser.add_argument("--input_pos", default=INPUT_POS, help="Percorso al layer positivo (shp/gpkg)")
-    parser.add_argument("--output_ned2", default=OUTPUT_NED2, help="Percorso di output per OUTPUT_NED2")
-    parser.add_argument("--output_ped2", default=OUTPUT_PED2, help="Percorso di output per OUTPUT_PED2")
-    parser.add_argument("--new_ned", default=NEW_NED, help="Percorso di output per NEW_NED")
-    parser.add_argument("--new_ped", default=NEW_PED, help="Percorso di output per NEW_PED")
-    args = parser.parse_args()
-    main(args)
+    processa_interazione_peb_neb("Salerno", "Padula")
