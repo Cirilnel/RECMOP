@@ -84,6 +84,10 @@ def get_regione_from_provincia(provincia: str) -> str:
 
     return mappa_provincia_regione[provincia]
 
+def safe_name(nome: str) -> str:
+    """Restituisce il nome in minuscolo e con spazi sostituiti da underscore."""
+    return nome.strip().lower().replace(' ', '_')
+
 # =============================================================================
 # FUNZIONI DI CALCOLO
 # =============================================================================
@@ -159,8 +163,8 @@ def calcola_domanda_energetica(comune: str, provincia: str) -> gpd.GeoDataFrame:
     logger.info("Dati SIAPE caricati.")
 
     # Costruisco il percorso dinamico per lo shapefile dei fabbricati
-    prov_safe = provincia.lower().replace(' ', '_')
-    comm_safe = comune.lower().replace(' ', '_')
+    prov_safe = safe_name(provincia)
+    comm_safe = safe_name(comune)
     shp_dir = os.path.join('..', 'FABBRICATI', f'fabbricati_{prov_safe}_{comm_safe}')
     if not os.path.isdir(shp_dir):
         raise FileNotFoundError(f"Directory shapefile non trovata: {shp_dir}")
@@ -184,16 +188,12 @@ def calcola_domanda_energetica(comune: str, provincia: str) -> gpd.GeoDataFrame:
     coeff_dom = calcola_coefficiente_domanda(df_join, df_siape, comune, provincia)
     logger.info(f"Coefficiente domanda per {comune} ({provincia}): {coeff_dom} kWh/mq/anno")
 
-    # Configuro directory e path output dinamicamente
-    out_dir = os.path.join(
-        '..', 'Data_Collection', 'shapefiles',
-        f'domanda_energetica_{prov_safe}_{comm_safe}'
-    )
+    # Configuro directory e path output dinamicamente (struttura annidata)
+    subdir = f"{prov_safe}_{comm_safe}"
+    dirname = f"domanda_energetica_{prov_safe}_{comm_safe}"
+    out_dir = os.path.join('..', 'Data_Collection', 'shapefiles', subdir, dirname)
     os.makedirs(out_dir, exist_ok=True)
-    out_shp = os.path.join(
-        out_dir,
-        f'domanda_energetica_{prov_safe}_{comm_safe}.shp'
-    )
+    out_shp = os.path.join(out_dir, f'{dirname}.shp')
 
     if gdf_fabbricati is not None:
         # Aggiungo colonna domanda energetica
@@ -208,6 +208,7 @@ def calcola_domanda_energetica(comune: str, provincia: str) -> gpd.GeoDataFrame:
         logger.info(f"Shapefile con domanda energetica salvato in {out_shp}")
 
     return gdf_fabbricati
+
 
 if __name__ == '__main__':
     # Esempio di utilizzo
