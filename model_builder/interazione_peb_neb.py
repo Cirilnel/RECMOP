@@ -18,12 +18,12 @@ from shapely.geometry.base import BaseGeometry
 from shapely.geometry import Polygon, MultiPolygon
 
 # Percorsi di default
-INPUT_NEG = "../Model_Builder_Args/NEB_mb.shp"
-INPUT_POS = "../Model_Builder_Args/PEB_mb.shp"
-OUTPUT_NED2 = "../Model_Builder_Args/output/OUTPUT_NED2.shp"
-OUTPUT_PED2 = "../Model_Builder_Args/output/OUTPUT_PED2.shp"
-NEW_NED = "../Model_Builder_Args/output/NEW_NED.shp"
-NEW_PED = "../Model_Builder_Args/output/NEW_PED.shp"
+INPUT_NEG = "../ESEMPIO_Model_Builder_Args/NEB_mb.shp"
+INPUT_POS = "../ESEMPIO_Model_Builder_Args/PEB_mb.shp"
+OUTPUT_NED2 = "../ESEMPIO_Model_Builder_Args/output/OUTPUT_NED2.shp"
+OUTPUT_PED2 = "../ESEMPIO_Model_Builder_Args/output/OUTPUT_PED2.shp"
+NEW_NED = "../ESEMPIO_Model_Builder_Args/output/NEW_NED.shp"
+NEW_PED = "../ESEMPIO_Model_Builder_Args/output/NEW_PED.shp"
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
