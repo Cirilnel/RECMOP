@@ -10,12 +10,11 @@ import argparse
 import logging
 import os
 import sys
-from typing import Tuple, Dict
+from typing import Dict
 import numpy as np
 import pandas as pd
 import geopandas as gpd
 from sklearn.neighbors import NearestNeighbors
-from pathlib import Path
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -255,7 +254,8 @@ class InterazionePebNeb:
         # Pulizia finale e rinominazione campi
         # PED2
         ped2 = self.calculate_field(ped2, 'ID_P2',
-                                    lambda df: df['ID_P'].astype(str) + ',' + df['ID_N'].astype(str).fillna(''), 'str')
+                                    lambda df: (df['ID_P'].fillna(0).astype(int).astype(str) + '_' +
+                                               df['ID_N'].fillna(0).astype(int).astype(str)), 'str')
 
         cols_to_drop = ['deficit', 'surplus', 'ID_P', 'ID_N', 'DELTA', 'Agr']
         ped2_final = ped2.drop(columns=[col for col in cols_to_drop if col in ped2.columns])
@@ -263,7 +263,8 @@ class InterazionePebNeb:
 
         # NED2
         ned2 = self.calculate_field(ned2, 'ID_N2',
-                                    lambda df: df['ID_N'].astype(str) + ',' + df['ID_P'].astype(str).fillna(''), 'str')
+                                    lambda df: (df['ID_N'].fillna(0).astype(int).astype(str) + '_'
+                                               + df['ID_P'].fillna(0).astype(int).astype(str)), 'str')
 
         ned2_final = ned2.drop(columns=[col for col in cols_to_drop if col in ned2.columns])
         ned2_final = ned2_final.rename(columns={'deficit2': 'deficit', 'ID_N2': 'ID_N'})
@@ -273,8 +274,8 @@ class InterazionePebNeb:
         ncer_final.to_file(output_ncer_path, driver='ESRI Shapefile')
         ned2_final.to_file(output_ned2_path, driver='ESRI Shapefile')
         ped2_final.to_file(output_ped2_path, driver='ESRI Shapefile')
-        new_ned.to_file(new_ned_path, driver='ESRI Shapefile')
-        new_ped.to_file(new_ped_path, driver='ESRI Shapefile')
+        #new_ned.to_file(new_ned_path, driver='ESRI Shapefile')
+        #new_ped.to_file(new_ped_path, driver='ESRI Shapefile')
 
 
         logger.info("Elaborazione completata!")
