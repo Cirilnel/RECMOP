@@ -1,0 +1,11 @@
+Mon Jun 30 16:16:13 2025
+annua_avg
+PERMANENT
+utente
+raster
+
+
+generato da r.series
+r.series --overwrite input="irr_15,irr_45,irr_74,irr_105,irr_135,irr\
+_166,irr_196,irr_227,irr_258,irr_288,irr_319,irr_349" output="annua_\
+avg" method="average" nprocs=1 memory=300

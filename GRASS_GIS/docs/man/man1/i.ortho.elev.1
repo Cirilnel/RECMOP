@@ -1,0 +1,100 @@
+.TH i.ortho.elev 1 "" "GRASS 8.4.1" "GRASS GIS User's Manual"
+.SH NAME
+\fI\fBi.ortho.elev\fR\fR  \- Select or modify the target elevation model.
+.SH KEYWORDS
+imagery, orthorectify
+.SH SYNOPSIS
+\fBi.ortho.elev\fR
+.br
+\fBi.ortho.elev \-\-help\fR
+.br
+\fBi.ortho.elev\fR [\-\fBp\fR] \fBgroup\fR=\fIname\fR  [\fBproject\fR=\fIname\fR]   [\fBmapset\fR=\fIname\fR]   [\fBelevation\fR=\fIname\fR]   [\fBmath_expression\fR=\fIstring\fR]   [\fBunits\fR=\fIstring\fR]   [\fBnull_value\fR=\fIstring\fR]   [\-\-\fBhelp\fR]  [\-\-\fBverbose\fR]  [\-\-\fBquiet\fR]  [\-\-\fBui\fR]
+.SS Flags:
+.IP "\fB\-p\fR" 4m
+.br
+Print currently selected elevation map and exit
+.IP "\fB\-\-help\fR" 4m
+.br
+Print usage summary
+.IP "\fB\-\-verbose\fR" 4m
+.br
+Verbose module output
+.IP "\fB\-\-quiet\fR" 4m
+.br
+Quiet module output
+.IP "\fB\-\-ui\fR" 4m
+.br
+Force launching GUI dialog
+.SS Parameters:
+.IP "\fBgroup\fR=\fIname\fR \fB[required]\fR" 4m
+.br
+Name of imagery group for ortho\-rectification
+.IP "\fBproject\fR=\fIname\fR" 4m
+.br
+Project (location) name
+.br
+Name of the target project (location)
+.IP "\fBmapset\fR=\fIname\fR" 4m
+.br
+Name of mapset (default: current search path)
+.br
+Name of the target mapset
+.IP "\fBelevation\fR=\fIname\fR" 4m
+.br
+Name of elevation map to use for ortho\-rectification
+.IP "\fBmath_expression\fR=\fIstring\fR" 4m
+.br
+Math expression to convert to real elevation
+.IP "\fBunits\fR=\fIstring\fR" 4m
+.br
+Unit of the elevation map
+.br
+Options: \fImiles, feet, meters, kilometers, acres, hectares\fR
+.IP "\fBnull_value\fR=\fIstring\fR" 4m
+.br
+No data value
+.SH DESCRIPTION
+\fIi.ortho.elev\fR is used to select or modify the target elevation
+model for orthorectification of imagery.
+This elevation model is essential for both the computation of photo\-to\-target
+parameters and for the actual orthorectification of imagery group files.
+The elevation model selected should cover the entire area of the image
+group to be orthorectified.
+Optionally, scaled elevation data can be converted to real elevation values
+specifying a mathematical expression.
+.SH SEE ALSO
+\fI
+i.ortho.photo
+.br
+i.ortho.camera
+.br
+g.gui.photo2image
+.br
+g.gui.image2target
+.br
+i.ortho.init
+.br
+i.rectify
+\fR
+.SH AUTHORS
+Mike Baba,  DBA Systems, Inc.
+.br
+Bugfixes and enhancements for GRASS GIS 7 by Markus Metz
+.SH SOURCE CODE
+.PP
+Available at:
+i.ortho.elev source code
+(history)
+.PP
+Latest change: Tuesday Dec 17 20:17:20 2024 in commit: d962e90c026708a4815ea2b9f46c0e84c17de22d
+.PP
+Main index |
+Imagery index |
+Topics index |
+Keywords index |
+Graphical index |
+Full index
+.PP
+© 2003\-2025
+GRASS Development Team,
+GRASS GIS 8.4.1 Reference Manual

@@ -1,0 +1,190 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+ <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+ <meta name="Author" content="GRASS Development Team">
+ <meta http-equiv="content-language" content="en-us">
+ <meta name="viewport" content="width=device-width, initial-scale=1">
+ <title>r.spreadpath - GRASS GIS manual</title>
+ <meta name="description" content="r.spreadpath: Recursively traces the least cost path backwards to cells from which the cumulative cost was determined.">
+ <meta name="keywords" content="raster, fire, cumulative costs">
+ <link rel="stylesheet" href="grassdocs.css" type="text/css">
+</head>
+<body bgcolor="white">
+<div id="container">
+
+<a href="index.html"><img src="grass_logo.png" alt="GRASS logo"></a>
+<script>
+// Create hamburger menu TOC HTML elements by the JavaScript
+let temp = document.createElement('template');
+const toc = '<ul class="toc-mobile-screen" id="toc-mobile-screen">' + 
+'<li><a class="toc-item" href="#description">DESCRIPTION</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#parameters:">Parameters:</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#references">REFERENCES</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#see-also">SEE ALSO</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#authors">AUTHORS</a>' + 
+'</li>' +
+'<a class="close" href="#">' +
+'<img src="./hamburger_menu_close.svg" alt="close">' +
+'</a>' +
+'</ul>' +
+'<a class="hamburger" href="#toc-mobile-screen">' +
+'<img src="./hamburger_menu.svg" alt="menu">' +
+'</a>';
+temp.innerHTML = toc;
+const grassLogoLink = document.getElementsByTagName("img")[0];
+grassLogoLink.after(temp.content);
+</script>
+<hr class="header">
+
+<h2>NAME</h2>
+<em><b>r.spreadpath</b></em>  - Recursively traces the least cost path backwards to cells from which the cumulative cost was determined.
+<h2>KEYWORDS</h2>
+<a href="raster.html">raster</a>, <a href="topic_fire.html">fire</a>, <a href="keywords.html#cumulative costs">cumulative costs</a>
+<h2>SYNOPSIS</h2>
+<div id="name"><b>r.spreadpath</b><br></div>
+<b>r.spreadpath --help</b><br>
+<div id="synopsis"><b>r.spreadpath</b> <b>x_input</b>=<em>name</em> <b>y_input</b>=<em>name</em>  [<b>coordinates</b>=<em>east,north</em>[,<i>east,north</i>,...]]  <b>output</b>=<em>name</em>  [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
+</div>
+
+<div id="flags">
+<h3>Flags:</h3>
+<dl>
+<dt><b>--overwrite</b></dt>
+<dd>Allow output files to overwrite existing files</dd>
+<dt><b>--help</b></dt>
+<dd>Print usage summary</dd>
+<dt><b>--verbose</b></dt>
+<dd>Verbose module output</dd>
+<dt><b>--quiet</b></dt>
+<dd>Quiet module output</dd>
+<dt><b>--ui</b></dt>
+<dd>Force launching GUI dialog</dd>
+</dl>
+</div>
+
+<div id="parameters">
+<h3>Parameters:</h3>
+<dl>
+<dt><b>x_input</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
+<dd>Name of raster map containing back-path easting information</dd>
+
+<dt><b>y_input</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
+<dd>Name of raster map containing back-path northing information</dd>
+
+<dt><b>coordinates</b>=<em>east,north[,<i>east,north</i>,...]</em></dt>
+<dd>The map E and N grid coordinates of starting points</dd>
+
+<dt><b>output</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
+<dd>Name for output raster map</dd>
+
+</dl>
+</div>
+<div class="toc">
+<h4 class="toc">Table of contents</h4>
+<ul class="toc">
+    <li class="toc"><a href="#description" class="toc">DESCRIPTION</a></li>
+    <li class="toc"><a href="#parameters:" class="toc">Parameters:</a></li>
+    <li class="toc"><a href="#references" class="toc">REFERENCES</a></li>
+    <li class="toc"><a href="#see-also" class="toc">SEE ALSO</a></li>
+    <li class="toc"><a href="#authors" class="toc">AUTHORS</a></li>
+</ul>
+</div>
+<h2><a name="description">DESCRIPTION</a></h2>
+
+<em>r.spreadpath</em> is part of the wildfire simulation toolset. Preparational
+steps for the fire simulation are the calculation of the rate of spread (ROS)
+with <em>r.ros</em>, and the creating of spread map with <em>r.spread</em>.
+Eventually, the fire path(s) based on starting point(s) are calculated
+with <em>r.spreadpath</em>.
+<p>
+
+<em>r.spreadpath</em> recursively traces the least cost path backwards to
+the origin, given backlink information input map layers and target locations
+from where paths are to be traced. The backlink information map layers
+record each cell's backlink UTM northing (the y_input) and easting (the
+x_input) coordinates from which the cell's cumulative cost was determined.
+
+<p>
+The backlink inputs can be generated from another GRASS raster program
+<em>r.spread</em>. One of the major applications of <em>r.spreadpath</em>
+along with <em>r.spread</em> is to accurately find the least cost corridors
+and/or paths on a raster setting. More information on <em>r.spread</em> and
+<em>r.spreadpath</em> can be found in Xu (1994).
+
+<h2><a name="parameters:">Parameters:</a></h2>
+
+<dl>
+<dt><b>x_input=</b><em>name</em>
+<dd>Name of input raster map layer containing backlink UTM easting
+coordinates.
+
+<dt><b>y_input=</b><em>name</em>
+<dd>Name of input raster map layer containing backlink UTM northing coordinates.
+
+<dt><b>coordinates =</b><em>x,y[,x,y,x,y, ...]</em>
+<dd>Each x,y coordinate pair gives the easting and northing
+(respectively) geographic coordinates of a target point from which to
+backwards trace the least cost path. As many points as desired can be
+entered by the user.
+
+<dt><b>output=</b><em>name</em>
+<dd>Name of raster map layer to contain output. Also can be used as the
+map layer of the input target points. If so used, the input target
+point map will be overwritten by the output.
+</dl>
+
+<h2><a name="references">REFERENCES</a></h2>
+
+<ul>
+<li>Xu, Jianping, 1994, Simulating the spread of wildfires using a
+geographic information system and remote sensing, Ph. D. Dissertation,
+Rutgers University, New Brunswick, New Jersey
+(<a href="https://dl.acm.org/citation.cfm?id=921466">ref</a>).</li>
+</ul>
+
+<h2><a name="see-also">SEE ALSO</a></h2>
+
+<em>
+<a href="r.spread.html">r.spread</a>,
+<a href="r.ros.html">r.ros</a>
+</em>
+
+Sample data download: <a href="https://grass.osgeo.org/sampledata/firedemo_grass7.sh">firedemo.sh</a>
+(run this script within the "Fire simulation data set" project).
+
+<h2><a name="authors">AUTHORS</a></h2>
+
+Jianping Xu and Richard G. Lathrop, Jr., Center for Remote Sensing and
+Spatial Analysis, Rutgers University.
+<h2>SOURCE CODE</h2>
+<p>
+  Available at:
+  <a href="https://github.com/OSGeo/grass/tree/main/raster/r.spreadpath">r.spreadpath source code</a>
+  (<a href="https://github.com/OSGeo/grass/commits/main/raster/r.spreadpath">history</a>)
+</p>
+<p>
+  Latest change: Wednesday Apr 17 11:38:48 2024 in commit: af7aa6982f1bc0f006e95221291b5ca125abd1e6
+</p>
+<hr class="header">
+<p>
+<a href="index.html">Main index</a> |
+<a href="raster.html">Raster index</a> |
+<a href="topics.html">Topics index</a> |
+<a href="keywords.html">Keywords index</a> |
+<a href="graphical_index.html">Graphical index</a> |
+<a href="full_index.html">Full index</a>
+</p>
+<p>
+&copy; 2003-2025
+<a href="https://grass.osgeo.org">GRASS Development Team</a>,
+GRASS GIS 8.4.1 Reference Manual
+</p>
+
+</div>
+</body>
+</html>

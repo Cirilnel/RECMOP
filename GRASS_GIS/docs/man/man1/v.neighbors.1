@@ -1,0 +1,137 @@
+.TH v.neighbors 1 "" "GRASS 8.4.1" "GRASS GIS User's Manual"
+.SH NAME
+\fI\fBv.neighbors\fR\fR  \- Neighborhood analysis tool for vector point maps.
+.br
+Makes each cell value a function of the attribute values assigned to the vector points or centroids in a radius around it, and stores new cell values in an output raster map.
+.SH KEYWORDS
+vector, algebra, statistics, raster, aggregation
+.SH SYNOPSIS
+\fBv.neighbors\fR
+.br
+\fBv.neighbors \-\-help\fR
+.br
+\fBv.neighbors\fR \fBinput\fR=\fIname\fR  [\fBlayer\fR=\fIstring\fR]  \fBoutput\fR=\fIname\fR \fBmethod\fR=\fIstring\fR \fBsize\fR=\fIfloat\fR  [\fBpoints_column\fR=\fIname\fR]   [\fBcats\fR=\fIrange\fR]   [\fBwhere\fR=\fIsql_query\fR]   [\-\-\fBoverwrite\fR]  [\-\-\fBhelp\fR]  [\-\-\fBverbose\fR]  [\-\-\fBquiet\fR]  [\-\-\fBui\fR]
+.SS Flags:
+.IP "\fB\-\-overwrite\fR" 4m
+.br
+Allow output files to overwrite existing files
+.IP "\fB\-\-help\fR" 4m
+.br
+Print usage summary
+.IP "\fB\-\-verbose\fR" 4m
+.br
+Verbose module output
+.IP "\fB\-\-quiet\fR" 4m
+.br
+Quiet module output
+.IP "\fB\-\-ui\fR" 4m
+.br
+Force launching GUI dialog
+.SS Parameters:
+.IP "\fBinput\fR=\fIname\fR \fB[required]\fR" 4m
+.br
+Name of input vector map
+.br
+Or data source for direct OGR access
+.IP "\fBlayer\fR=\fIstring\fR" 4m
+.br
+Layer number or name
+.br
+Vector features can have category values in different layers. This number determines which layer to use. When used with direct OGR access this is the layer name.
+.br
+Default: \fI1\fR
+.IP "\fBoutput\fR=\fIname\fR \fB[required]\fR" 4m
+.br
+Name for output raster map
+.IP "\fBmethod\fR=\fIstring\fR \fB[required]\fR" 4m
+.br
+Method for aggregate statistics (count if non given)
+.br
+Options: \fIcount, sum, average, median, mode, minimum, maximum, range, stddev, variance, diversity\fR
+.br
+Default: \fIcount\fR
+.IP "\fBsize\fR=\fIfloat\fR \fB[required]\fR" 4m
+.br
+Neighborhood diameter in map units
+.IP "\fBpoints_column\fR=\fIname\fR" 4m
+.br
+Column name of points map to use for statistics
+.br
+Column of points map must be numeric
+.IP "\fBcats\fR=\fIrange\fR" 4m
+.br
+Category values
+.br
+Example: 1,3,7\-9,13
+.IP "\fBwhere\fR=\fIsql_query\fR" 4m
+.br
+WHERE conditions of SQL statement without \(cqwhere\(cq keyword
+.br
+Example: income < 1000 and population >= 10000
+.SH DESCRIPTION
+This module makes each cell value a function of the attribute values assigned
+to the vector points or centroids in an area around the cell with a diameter of
+\fIsize\fR around it, and stores the new cell values in the \fIoutput\fR
+raster map layer. By default, the module just counts the number of points. The
+user can also choose amongst a variety of aggregate statistics using the
+parameter \fImethod\fR. These statistics are calculated on the attributes in
+the \fIpoint_column\fR. Using the usual \fIcats\fR and \fIwhere\fR
+parameters the user can chose to take only a subset of the points into account.
+.PP
+Note that \fIsize\fR is defined as the diameter, and so has to be twice the
+wanted search radius, and that the module works within the current computational
+region which can be adjusted using g.region. If the
+vector map falls completely outside the current region, the module will stop
+with an error.
+.SH EXAMPLE
+Count the number of schools for a given grid (North Carolina sample
+dataset):
+.br
+.nf
+\fC
+g.region vector=schools_wake res=100 \-p \-a
+v.neighbors input=schools_wake output=schools_wake_3000m method=count size=3000
+d.mon wx0
+d.rast schools_wake_3000m
+d.vect schools_wake
+\fR
+.fi
+The result gives for each grid cell the number of points (here: schools)
+not farther than 1500 meter away (half of the given \fIsize\fR value)
+from the respective cell center.
+.PP
+Calculate the mean capacity of schools for the same grid:
+.br
+.nf
+\fC
+v.neighbors input=schools_wake output=schools_capacity point_column=CAPACITYTO \(rs
+            method=average size=3000
+\fR
+.fi
+.SH SEE ALSO
+\fI
+r.neighbors,
+v.vect.stats
+\fR
+.SH AUTHORS
+Radim Blazek,
+.br
+Moritz Lennert
+.SH SOURCE CODE
+.PP
+Available at:
+v.neighbors source code
+(history)
+.PP
+Latest change: Thursday Jan 26 14:10:26 2023 in commit: cdd84c130cea04b204479e2efdc75c742efc4843
+.PP
+Main index |
+Vector index |
+Topics index |
+Keywords index |
+Graphical index |
+Full index
+.PP
+© 2003\-2025
+GRASS Development Team,
+GRASS GIS 8.4.1 Reference Manual

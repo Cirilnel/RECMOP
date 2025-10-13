@@ -1,0 +1,229 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+ <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+ <meta name="Author" content="GRASS Development Team">
+ <meta http-equiv="content-language" content="en-us">
+ <meta name="viewport" content="width=device-width, initial-scale=1">
+ <title>g.copy - GRASS GIS manual</title>
+ <meta name="description" content="g.copy: Copies available data files in the current mapset search path to the user's current mapset.">
+ <meta name="keywords" content="general, map management, copy">
+ <link rel="stylesheet" href="grassdocs.css" type="text/css">
+</head>
+<body bgcolor="white">
+<div id="container">
+
+<a href="index.html"><img src="grass_logo.png" alt="GRASS logo"></a>
+<script>
+// Create hamburger menu TOC HTML elements by the JavaScript
+let temp = document.createElement('template');
+const toc = '<ul class="toc-mobile-screen" id="toc-mobile-screen">' + 
+'<li><a class="toc-item" href="#description">DESCRIPTION</a>' + 
+'<ul>' + 
+'<li><a class="toc-item" href="#relation-to-mapsets">Relation to mapsets</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#behavior-on-error">Behavior on error</a>' + 
+'</li>' + 
+'</ul></li>' + 
+'<li><a class="toc-item" href="#examples">EXAMPLES</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#see-also">SEE ALSO</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#author">AUTHOR</a>' + 
+'</li>' +
+'<a class="close" href="#">' +
+'<img src="./hamburger_menu_close.svg" alt="close">' +
+'</a>' +
+'</ul>' +
+'<a class="hamburger" href="#toc-mobile-screen">' +
+'<img src="./hamburger_menu.svg" alt="menu">' +
+'</a>';
+temp.innerHTML = toc;
+const grassLogoLink = document.getElementsByTagName("img")[0];
+grassLogoLink.after(temp.content);
+</script>
+<hr class="header">
+
+<h2>NAME</h2>
+<em><b>g.copy</b></em>  - Creates copies of maps and other elements<BR>
+Copies available data files in the current mapset search path to the user's current mapset.
+<h2>KEYWORDS</h2>
+<a href="general.html">general</a>, <a href="topic_map_management.html">map management</a>, <a href="keywords.html#copy">copy</a>
+<h2>SYNOPSIS</h2>
+<div id="name"><b>g.copy</b><br></div>
+<b>g.copy --help</b><br>
+<div id="synopsis"><b>g.copy</b>  [<b>raster</b>=<em>from,to</em>]   [<b>raster_3d</b>=<em>from,to</em>]   [<b>vector</b>=<em>from,to</em>]   [<b>label</b>=<em>from,to</em>]   [<b>region</b>=<em>from,to</em>]   [<b>group</b>=<em>from,to</em>]   [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
+</div>
+
+<div id="flags">
+<h3>Flags:</h3>
+<dl>
+<dt><b>--overwrite</b></dt>
+<dd>Allow output files to overwrite existing files</dd>
+<dt><b>--help</b></dt>
+<dd>Print usage summary</dd>
+<dt><b>--verbose</b></dt>
+<dd>Verbose module output</dd>
+<dt><b>--quiet</b></dt>
+<dd>Quiet module output</dd>
+<dt><b>--ui</b></dt>
+<dd>Force launching GUI dialog</dd>
+</dl>
+</div>
+
+<div id="parameters">
+<h3>Parameters:</h3>
+<dl>
+<dt><b>raster</b>=<em>from,to</em></dt>
+<dd>raster map(s) to be copied</dd>
+
+<dt><b>raster_3d</b>=<em>from,to</em></dt>
+<dd>3D raster map(s) to be copied</dd>
+
+<dt><b>vector</b>=<em>from,to</em></dt>
+<dd>vector map(s) to be copied</dd>
+
+<dt><b>label</b>=<em>from,to</em></dt>
+<dd>paint label file(s) to be copied</dd>
+
+<dt><b>region</b>=<em>from,to</em></dt>
+<dd>region definition(s) to be copied</dd>
+
+<dt><b>group</b>=<em>from,to</em></dt>
+<dd>imagery group(s) to be copied</dd>
+
+</dl>
+</div>
+<div class="toc">
+<h4 class="toc">Table of contents</h4>
+<ul class="toc">
+    <li class="toc"><a href="#description" class="toc">DESCRIPTION</a>
+    <ul class="toc">
+        <li class="toc"><a href="#relation-to-mapsets" class="toc">Relation to mapsets</a></li>
+        <li class="toc"><a href="#behavior-on-error" class="toc">Behavior on error</a></li>
+    </ul></li>
+    <li class="toc"><a href="#examples" class="toc">EXAMPLES</a></li>
+    <li class="toc"><a href="#see-also" class="toc">SEE ALSO</a></li>
+    <li class="toc"><a href="#author" class="toc">AUTHOR</a></li>
+</ul>
+</div>
+<h2><a name="description">DESCRIPTION</a></h2>
+
+The <em>g.copy</em> module creates a copy of existing raster maps,
+vector maps, or other elements. The copy is always created in
+the current mapset. The source data can be in the current mapset,
+in an explicitly specified mapset, or in a mapset which is in the
+current mapset search path (typically the PERMANENT mapset).
+
+<p>
+The maps and other elements to copy are specified in pairs
+<b>from</b>,<b>to</b> according to their types.
+Although typically only one map is copied in one module call,
+multiple pairs can be provided for each type and multiple types
+can be provided at the same time.
+
+<h3><a name="relation-to-mapsets">Relation to mapsets</a></h3>
+
+A user may access data stored under the other mapsets listed in their
+mapset search path. However, the user may only modify data stored
+under their own current mapset. <em>g.copy</em> allows the user to copy
+existing data files <b>from</b> other mapsets <b>to</b> the user's
+current mapset (<code>g.mapset -p</code>). The files to be copied must exist in the
+user's current mapset search path (<code>g.mapsets -p</code>) and project;
+output is sent to the
+relevant data element directory(ies) under the user's current mapset.
+
+<h3><a name="behavior-on-error">Behavior on error</a></h3>
+
+Errors typically occur when a map or other element does not exist,
+<b>from</b> and <b>to</b> are the same, <b>to</b> element
+already exists and overwriting (e.g., by <b>--overwrite</b>) is not
+enabled, or the <b>to</b> element has an illegal name.
+
+When only one map or other element is requested to be copied and the copying
+is not possible or fails, an error is reported.
+
+<p>
+If multiple maps or other elements are copied in one command,
+<em>g.copy</em> attempts to copy as much as possible
+even when problems occur with one of the elements.
+In that case, copying of the element causing problems is skipped, and
+<em>g.copy</em> proceeds with copying the remaining elements.
+
+If nothing can be copied or an error occurred during one of the copy
+operations, an error message is reported after other possible copy
+operations were performed.
+
+<h2><a name="examples">EXAMPLES</a></h2>
+
+If the user wished to copy the existing raster
+file <em>soils</em> to a file called <em>soils.ph</em> and
+to copy an existing vector map <em>roads</em> to a file
+called <em>rds.old</em>, the user could type:
+
+<div class="code"><pre>
+g.copy raster=soils,soils.ph
+g.copy vector=roads,rds.old
+
+# or even combined:
+g.copy raster=soils,soils.ph vector=roads,rds.old
+</pre></div>
+
+<p>
+Data files can also be specified by their mapsets.  For
+example, the below command copies the raster map named
+<em>soils</em> from the mapset <em>wilson</em> to a new
+file called <em>soils</em> to be placed under the user's
+current mapset:
+
+<div class="code"><pre>
+g.copy raster=soils@wilson,soils
+</pre></div>
+
+If no mapset name is specified, <em>g.copy</em> searches for the
+named <b>from</b> map in each of the mapset directories listed in the
+user's current mapset search path in the order in which mapsets are
+listed there (see <em><a href="g.mapsets.html">g.mapsets</a></em>).
+
+<h2><a name="see-also">SEE ALSO</a></h2>
+
+<em>
+<a href="g.access.html">g.access</a>,
+<a href="g.list.html">g.list</a>,
+<a href="g.mapsets.html">g.mapsets</a>,
+<a href="g.remove.html">g.remove</a>,
+<a href="g.rename.html">g.rename</a>
+</em>
+
+<h2><a name="author">AUTHOR</a></h2>
+
+Michael Shapiro,
+U.S. Army Construction Engineering
+Research Laboratory
+<h2>SOURCE CODE</h2>
+<p>
+  Available at:
+  <a href="https://github.com/OSGeo/grass/tree/main/general/g.copy">g.copy source code</a>
+  (<a href="https://github.com/OSGeo/grass/commits/main/general/g.copy">history</a>)
+</p>
+<p>
+  Latest change: Wednesday Apr 17 11:38:48 2024 in commit: af7aa6982f1bc0f006e95221291b5ca125abd1e6
+</p>
+<hr class="header">
+<p>
+<a href="index.html">Main index</a> |
+<a href="general.html">General index</a> |
+<a href="topics.html">Topics index</a> |
+<a href="keywords.html">Keywords index</a> |
+<a href="graphical_index.html">Graphical index</a> |
+<a href="full_index.html">Full index</a>
+</p>
+<p>
+&copy; 2003-2025
+<a href="https://grass.osgeo.org">GRASS Development Team</a>,
+GRASS GIS 8.4.1 Reference Manual
+</p>
+
+</div>
+</body>
+</html>

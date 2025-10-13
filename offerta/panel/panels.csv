@@ -1,17 +1,11 @@
-Marca,Modello,Potenza (Wp),Efficienza (%),Tecnologia,Prezzo,Superficie,Dimensione
-Sonnenkraft,KPV 430Wp HCB,430,21.52,Categoria A,129.00,1.998,2.597
-FuturaSun,FUxxxMV Silk Nova EU,430,22.02,Categoria A,125.00,1.952,2.538
-PEIMAR,SA505M,505,21.54,Categoria A,135.00,2.344,3.047
-SoliTek,BlackStar B.108 - 420W,420,21.51,Categoria A,142.00,1.952,2.538
-Sunerg Solar srl,XMHCTO430BW+H,430,22.02,Categoria A,119.00,1.952,2.538
-SoliTek,Solid Solrif N - 435W,435,22.04,Categoria A,148.00,1.971,2.562
-SoliTek,Solid Solrif D - 435W,435,22.04,Categoria A,148.00,1.971,2.562
-SoliTek,BlackStar B.108 - 435W,435,22.27,Categoria A,145.00,1.952,2.538
-SoliTek,SOLID Bifacial Frameless - 435W,435,22.07,Categoria A,155.00,1.971,2.562
-SoliTek,Solid bifacial framed - 435W,435,22.27,Categoria A,158.00,1.952,2.538
-Meyer Burger,White 395,395,21.50,Categoria C,169.00,1.952,2.538
-Meyer Burger,Black 385,385,20.90,Categoria C,165.00,1.952,2.538
-Meyer Burger,White 390,390,21.20,Categoria C,168.00,1.952,2.538
-Meyer Burger,Glass 385 L(Bifacial),385,20.90,Categoria C,178.00,1.952,2.538
-Meyer Burger,Black 380,380,20.70,Categoria C,162.00,1.952,2.538
-Meyer Burger,Black 390,390,21.20,Categoria C,168.00,1.952,2.538
+Marca;Modello;Potenza (Wp);Efficienza (%);Tecnologia;Prezzo;Superficie;Sup+30%;;
+SunPower;SPR?MAX7?445?PT;445;24,1;Monocristallino;250;1,85;2,41;;
+SunPower;SPR?MAX3?430?PT;430;22,7;Monocristallino;275;1,9;2,47;;
+REC;Pure?R Series?430Wp;430;22,3;Bifacial HJT;260;1,93;2,51;;
+LONGi;LR7?72HGD?620M;620;23;Bifacial HPDC;225;2,7;3,51;;
+Jinko;JKM625?650N?78HL4?BDV;650;23,25;N-TYPE TOPCon;230;2,8;3,64;;
+Trina;TSM-NEG9R.25?455Wp;455;22,8;N-TYPE TOPCon;230;2;2,6;;
+Q.CELLS;Q.PEAK_DUO_M?G11S?420Wp;420;21,5;Monocristallino;96;1,95;2,54;;
+Viessmann;Vitovolt300M410WE;410;20,66;Monocristallino;100;1,95;2,54;;
+3SUN;B60?3SHBGH?AD?595Wp;595;23,4;N-TYPE HJT;110;2,83;3,68;;
+CanadianSolar;TOPHiKu6_CS6.1?54TD?470Wp;470;23;N-TYPE TOPCon;110;2,04;2,65;;

@@ -1,0 +1,159 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+ <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+ <meta name="Author" content="GRASS Development Team">
+ <meta http-equiv="content-language" content="en-us">
+ <meta name="viewport" content="width=device-width, initial-scale=1">
+ <title>t.rast3d.list.py - GRASS GIS manual</title>
+ <meta name="description" content="t.rast3d.list.py: Lists registered maps of a space time raster3d dataset.">
+ <meta name="keywords" content="temporal, map management, list, raster3d, voxel, time">
+ <link rel="stylesheet" href="grassdocs.css" type="text/css">
+</head>
+<body bgcolor="white">
+<div id="container">
+
+<a href="index.html"><img src="grass_logo.png" alt="GRASS logo"></a>
+<script>
+// Create hamburger menu TOC HTML elements by the JavaScript
+let temp = document.createElement('template');
+const toc = '<ul class="toc-mobile-screen" id="toc-mobile-screen">' + 
+'<li><a class="toc-item" href="#description">DESCRIPTION</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#see-also">SEE ALSO</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#author">AUTHOR</a>' + 
+'</li>' +
+'<a class="close" href="#">' +
+'<img src="./hamburger_menu_close.svg" alt="close">' +
+'</a>' +
+'</ul>' +
+'<a class="hamburger" href="#toc-mobile-screen">' +
+'<img src="./hamburger_menu.svg" alt="menu">' +
+'</a>';
+temp.innerHTML = toc;
+const grassLogoLink = document.getElementsByTagName("img")[0];
+grassLogoLink.after(temp.content);
+</script>
+<hr class="header">
+
+<h2>NAME</h2>
+<em><b>t.rast3d.list.py</b></em>  - Lists registered maps of a space time raster3d dataset.
+<h2>KEYWORDS</h2>
+<a href="temporal.html">temporal</a>, <a href="topic_map_management.html">map management</a>, <a href="keywords.html#list">list</a>, <a href="keywords.html#raster3d">raster3d</a>, <a href="keywords.html#voxel">voxel</a>, <a href="keywords.html#time">time</a>
+<h2>SYNOPSIS</h2>
+<div id="name"><b>t.rast3d.list.py</b><br></div>
+<b>t.rast3d.list.py --help</b><br>
+<div id="synopsis"><b>t.rast3d.list.py</b> [-<b>s</b>] <b>input</b>=<em>name</em>  [<b>order</b>=<em>string</em>[,<i>string</i>,...]]   [<b>columns</b>=<em>string</em>[,<i>string</i>,...]]   [<b>where</b>=<em>sql_query</em>]   [<b>method</b>=<em>string</em>]   [<b>separator</b>=<em>character</em>]   [<b>output</b>=<em>name</em>]   [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
+</div>
+
+<div id="flags">
+<h3>Flags:</h3>
+<dl>
+<dt><b>-s</b></dt>
+<dd>Suppress printing of column names</dd>
+
+<dt><b>--overwrite</b></dt>
+<dd>Allow output files to overwrite existing files</dd>
+<dt><b>--help</b></dt>
+<dd>Print usage summary</dd>
+<dt><b>--verbose</b></dt>
+<dd>Verbose module output</dd>
+<dt><b>--quiet</b></dt>
+<dd>Quiet module output</dd>
+<dt><b>--ui</b></dt>
+<dd>Force launching GUI dialog</dd>
+</dl>
+</div>
+
+<div id="parameters">
+<h3>Parameters:</h3>
+<dl>
+<dt><b>input</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
+<dd>Name of the input space time raster3d dataset</dd>
+
+<dt><b>order</b>=<em>string[,<i>string</i>,...]</em></dt>
+<dd>Order the space time dataset by category</dd>
+<dd>Options: <em>id, name, creator, mapset, temporal_type, creation_time, start_time, end_time, north, south, west, east, nsres, tbres, ewres, cols, rows, depths, number_of_cells, min, max</em></dd>
+<dd>Default: <em>start_time</em></dd>
+
+<dt><b>columns</b>=<em>string[,<i>string</i>,...]</em></dt>
+<dd>Columns to be printed to stdout</dd>
+<dd>Options: <em>id, name, creator, mapset, temporal_type, creation_time, start_time, end_time, north, south, west, east, nsres, tbres, ewres, cols, rows, depths, number_of_cells, min, max</em></dd>
+<dd>Default: <em>name,mapset,start_time,end_time</em></dd>
+
+<dt><b>where</b>=<em>sql_query</em></dt>
+<dd>WHERE conditions of SQL statement without 'where' keyword used in the temporal GIS framework</dd>
+<dd>Example: start_time &gt; '2001-01-01 12:30:00'</dd>
+
+<dt><b>method</b>=<em>string</em></dt>
+<dd>Method used for data listing</dd>
+<dd>Options: <em>cols, comma, delta, deltagaps, gran</em></dd>
+<dd>Default: <em>cols</em></dd>
+
+<dt><b>separator</b>=<em>character</em></dt>
+<dd>Field separator character between the output columns</dd>
+<dd>Special characters: pipe, comma, space, tab, newline</dd>
+<dd>Default: <em>pipe</em></dd>
+
+<dt><b>output</b>=<em>name</em></dt>
+<dd>Name for output file</dd>
+
+</dl>
+</div>
+<div class="toc">
+<h4 class="toc">Table of contents</h4>
+<ul class="toc">
+    <li class="toc"><a href="#description" class="toc">DESCRIPTION</a></li>
+    <li class="toc"><a href="#see-also" class="toc">SEE ALSO</a></li>
+    <li class="toc"><a href="#author" class="toc">AUTHOR</a></li>
+</ul>
+</div>
+<h2><a name="description">DESCRIPTION</a></h2>
+
+<em>t.rast3d.list</em> provides the same functionality as
+<a href="t.rast.list.html">t.rast.list</a>, the only difference is the
+3D raster map layer metadata. Please refer to the manual page of
+<a href="t.rast.list.html">t.rast.list</a>.
+
+<h2><a name="see-also">SEE ALSO</a></h2>
+
+<em>
+<a href="t.rast.list.html">t.rast.list</a>,
+<a href="g.list.html">g.list</a>,
+<a href="t.create.html">t.create</a>,
+<a href="t.info.html">t.info</a>,
+<a href="t.list.html">t.list</a>,
+<a href="t.vect.list.html">t.vect.list</a>
+</em>
+
+<h2><a name="author">AUTHOR</a></h2>
+
+S&ouml;ren Gebbert, Th&uuml;nen Institute of Climate-Smart Agriculture
+<h2>SOURCE CODE</h2>
+<p>
+  Available at:
+  <a href="https://github.com/OSGeo/grass/tree/main/temporal/t.rast3d.list">t.rast3d.list source code</a>
+  (<a href="https://github.com/OSGeo/grass/commits/main/temporal/t.rast3d.list">history</a>)
+</p>
+<p>
+  Latest change: Thursday Jan 26 14:10:26 2023 in commit: cdd84c130cea04b204479e2efdc75c742efc4843
+</p>
+<hr class="header">
+<p>
+<a href="index.html">Main index</a> |
+<a href="temporal.html">Temporal index</a> |
+<a href="topics.html">Topics index</a> |
+<a href="keywords.html">Keywords index</a> |
+<a href="graphical_index.html">Graphical index</a> |
+<a href="full_index.html">Full index</a>
+</p>
+<p>
+&copy; 2003-2025
+<a href="https://grass.osgeo.org">GRASS Development Team</a>,
+GRASS GIS 8.4.1 Reference Manual
+</p>
+
+</div>
+</body>
+</html>

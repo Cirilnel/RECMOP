@@ -1,0 +1,224 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+ <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+ <meta name="Author" content="GRASS Development Team">
+ <meta http-equiv="content-language" content="en-us">
+ <meta name="viewport" content="width=device-width, initial-scale=1">
+ <title>db.in.ogr.py - GRASS GIS manual</title>
+ <meta name="description" content="db.in.ogr.py: Imports attribute tables in various formats.">
+ <meta name="keywords" content="database, import, attribute table">
+ <link rel="stylesheet" href="grassdocs.css" type="text/css">
+</head>
+<body bgcolor="white">
+<div id="container">
+
+<a href="index.html"><img src="grass_logo.png" alt="GRASS logo"></a>
+<script>
+// Create hamburger menu TOC HTML elements by the JavaScript
+let temp = document.createElement('template');
+const toc = '<ul class="toc-mobile-screen" id="toc-mobile-screen">' + 
+'<li><a class="toc-item" href="#description">DESCRIPTION</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#examples">EXAMPLES</a>' + 
+'<ul>' + 
+'<li><a class="toc-item" href="#import-csv-file">Import CSV file</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#import-dbf-table">Import DBF table</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#import-of-a-sqlite-table">Import of a SQLite table</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#import-of-a-postgresql-table">Import of a PostgreSQL table</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#import-xls-file">Import XLS file</a>' + 
+'</li>' + 
+'</ul></li>' + 
+'<li><a class="toc-item" href="#see-also">SEE ALSO</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#author">AUTHOR</a>' + 
+'</li>' +
+'<a class="close" href="#">' +
+'<img src="./hamburger_menu_close.svg" alt="close">' +
+'</a>' +
+'</ul>' +
+'<a class="hamburger" href="#toc-mobile-screen">' +
+'<img src="./hamburger_menu.svg" alt="menu">' +
+'</a>';
+temp.innerHTML = toc;
+const grassLogoLink = document.getElementsByTagName("img")[0];
+grassLogoLink.after(temp.content);
+</script>
+<hr class="header">
+
+<h2>NAME</h2>
+<em><b>db.in.ogr.py</b></em>  - Imports attribute tables in various formats.
+<h2>KEYWORDS</h2>
+<a href="database.html">database</a>, <a href="topic_import.html">import</a>, <a href="keywords.html#attribute table">attribute table</a>
+<h2>SYNOPSIS</h2>
+<div id="name"><b>db.in.ogr.py</b><br></div>
+<b>db.in.ogr.py --help</b><br>
+<div id="synopsis"><b>db.in.ogr.py</b> <b>input</b>=<em>name</em>  [<b>gdal_config</b>=<em>string</em>]   [<b>gdal_doo</b>=<em>string</em>]   [<b>db_table</b>=<em>name</em>]   [<b>output</b>=<em>name</em>]   [<b>key</b>=<em>string</em>]   [<b>encoding</b>=<em>string</em>]   [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
+</div>
+
+<div id="flags">
+<h3>Flags:</h3>
+<dl>
+<dt><b>--overwrite</b></dt>
+<dd>Allow output files to overwrite existing files</dd>
+<dt><b>--help</b></dt>
+<dd>Print usage summary</dd>
+<dt><b>--verbose</b></dt>
+<dd>Verbose module output</dd>
+<dt><b>--quiet</b></dt>
+<dd>Quiet module output</dd>
+<dt><b>--ui</b></dt>
+<dd>Force launching GUI dialog</dd>
+</dl>
+</div>
+
+<div id="parameters">
+<h3>Parameters:</h3>
+<dl>
+<dt><b>input</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
+<dd>Table file to be imported or DB connection string</dd>
+
+<dt><b>gdal_config</b>=<em>string</em></dt>
+<dd>GDAL configuration options</dd>
+<dd>Comma-separated list of key=value pairs</dd>
+
+<dt><b>gdal_doo</b>=<em>string</em></dt>
+<dd>GDAL dataset open options</dd>
+<dd>Comma-separated list of key=value pairs</dd>
+
+<dt><b>db_table</b>=<em>name</em></dt>
+<dd>Name of table from given DB to be imported</dd>
+
+<dt><b>output</b>=<em>name</em></dt>
+<dd>Name for output table</dd>
+
+<dt><b>key</b>=<em>string</em></dt>
+<dd>Name for auto-generated unique key column</dd>
+
+<dt><b>encoding</b>=<em>string</em></dt>
+<dd>Encoding value for attribute data</dd>
+
+</dl>
+</div>
+<div class="toc">
+<h4 class="toc">Table of contents</h4>
+<ul class="toc">
+    <li class="toc"><a href="#description" class="toc">DESCRIPTION</a></li>
+    <li class="toc"><a href="#examples" class="toc">EXAMPLES</a>
+    <ul class="toc">
+        <li class="toc"><a href="#import-csv-file" class="toc">Import CSV file</a></li>
+        <li class="toc"><a href="#import-dbf-table" class="toc">Import DBF table</a></li>
+        <li class="toc"><a href="#import-of-a-sqlite-table" class="toc">Import of a SQLite table</a></li>
+        <li class="toc"><a href="#import-of-a-postgresql-table" class="toc">Import of a PostgreSQL table</a></li>
+        <li class="toc"><a href="#import-xls-file" class="toc">Import XLS file</a></li>
+    </ul></li>
+    <li class="toc"><a href="#see-also" class="toc">SEE ALSO</a></li>
+    <li class="toc"><a href="#author" class="toc">AUTHOR</a></li>
+</ul>
+</div>
+<h2><a name="description">DESCRIPTION</a></h2>
+
+<em>db.in.ogr</em> imports attribute tables in various formats as
+supported by the <a href="https://gdal.org/">OGR library</a>
+on the local system (DBF, CSV, PostgreSQL, SQLite, MySQL, ODBC,
+etc.). Optionally a unique <b>key</b> (ID) column can be
+added to the table.
+
+<h2><a name="examples">EXAMPLES</a></h2>
+
+<h3><a name="import-csv-file">Import CSV file</a></h3>
+
+Limited type recognition can be done for Integer, Real, String, Date, Time and DateTime
+columns through a descriptive file with same name as the CSV file, but .csvt extension
+(see details <a href="https://gdal.org/en/stable/drivers/vector/csv.html">here</a>).
+
+<div class="code"><pre>
+# NOTE: create koeppen_gridcode.csvt first for automated type recognition
+db.in.ogr input=koeppen_gridcode.csv output=koeppen_gridcode gdal_doo="AUTODETECT_TYPE=YES"
+db.describe koeppen_gridcode -c
+db.select table=koeppen_gridcode
+</pre></div>
+
+<h3><a name="import-dbf-table">Import DBF table</a></h3>
+
+Import of a DBF table with additional unique key column (e.g., needed
+for <em><a href="v.in.db.html">v.in.db</a></em>).
+
+<div class="code"><pre>
+db.in.ogr input=/path/to/mydata.dbf output=census_raleigh key=myid
+db.describe -c census_raleigh
+</pre></div>
+
+<h3><a name="import-of-a-sqlite-table">Import of a SQLite table</a></h3>
+
+<div class="code"><pre>
+db.in.ogr input=/path/to/sqlite.db db_table=census_raleigh output=census_raleigh
+</pre></div>
+
+<h3><a name="import-of-a-postgresql-table">Import of a PostgreSQL table</a></h3>
+<div class="code"><pre>
+# HINT: if the database contains spatial tables, but you want to import a non-spatial
+table, set the environmental variable PG_LIST_ALL_TABLES to YES before importing
+
+db.in.ogr input="PG:host=localhost dbname=ecad user=neteler" \
+          db_table=ecad_verona_tmean output=ecad_verona_tmean
+db.select table=ecad_verona_tmean
+db.describe -c ecad_verona_tmean
+</pre></div>
+
+<h3><a name="import-xls-file">Import XLS file</a></h3>
+
+To force reading headers, define environmental
+variable <code>OGR_XLS_HEADERS='FORCE'</code>. Parameter <b>db_table</b>
+refers to the list within XLS file.
+
+<div class="code"><pre>
+export OGR_XLS_HEADERS='FORCE'
+db.in.ogr input=address.xls db_table=address_data
+</pre></div>
+
+<h2><a name="see-also">SEE ALSO</a></h2>
+
+<em>
+<a href="db.select.html">db.select</a>,
+<a href="v.in.ogr.html">v.in.ogr</a>,
+<a href="v.in.db.html">v.in.db</a>
+</em>
+
+<p>
+<a href="sql.html">GRASS SQL interface</a>
+
+<h2><a name="author">AUTHOR</a></h2>
+
+Markus Neteler
+<h2>SOURCE CODE</h2>
+<p>
+  Available at:
+  <a href="https://github.com/OSGeo/grass/tree/main/scripts/db.in.ogr">db.in.ogr source code</a>
+  (<a href="https://github.com/OSGeo/grass/commits/main/scripts/db.in.ogr">history</a>)
+</p>
+<p>
+  Latest change: Friday Dec 27 01:53:45 2024 in commit: bd53b2448f13719ddb4f5b4d5cf373f8c259de0b
+</p>
+<hr class="header">
+<p>
+<a href="index.html">Main index</a> |
+<a href="database.html">Database index</a> |
+<a href="topics.html">Topics index</a> |
+<a href="keywords.html">Keywords index</a> |
+<a href="graphical_index.html">Graphical index</a> |
+<a href="full_index.html">Full index</a>
+</p>
+<p>
+&copy; 2003-2025
+<a href="https://grass.osgeo.org">GRASS Development Team</a>,
+GRASS GIS 8.4.1 Reference Manual
+</p>
+
+</div>
+</body>
+</html>

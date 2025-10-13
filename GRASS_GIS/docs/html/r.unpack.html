@@ -1,0 +1,162 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+ <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+ <meta name="Author" content="GRASS Development Team">
+ <meta http-equiv="content-language" content="en-us">
+ <meta name="viewport" content="width=device-width, initial-scale=1">
+ <title>r.unpack.py - GRASS GIS manual</title>
+ <meta name="description" content="r.unpack.py: Imports a GRASS GIS specific raster archive file (packed with r.pack) as a raster map">
+ <meta name="keywords" content="raster, import, copying">
+ <link rel="stylesheet" href="grassdocs.css" type="text/css">
+</head>
+<body bgcolor="white">
+<div id="container">
+
+<a href="index.html"><img src="grass_logo.png" alt="GRASS logo"></a>
+<script>
+// Create hamburger menu TOC HTML elements by the JavaScript
+let temp = document.createElement('template');
+const toc = '<ul class="toc-mobile-screen" id="toc-mobile-screen">' + 
+'<li><a class="toc-item" href="#description">DESCRIPTION</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#notes">NOTES</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#example">EXAMPLE</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#see-also">SEE ALSO</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#authors">AUTHORS</a>' + 
+'</li>' +
+'<a class="close" href="#">' +
+'<img src="./hamburger_menu_close.svg" alt="close">' +
+'</a>' +
+'</ul>' +
+'<a class="hamburger" href="#toc-mobile-screen">' +
+'<img src="./hamburger_menu.svg" alt="menu">' +
+'</a>';
+temp.innerHTML = toc;
+const grassLogoLink = document.getElementsByTagName("img")[0];
+grassLogoLink.after(temp.content);
+</script>
+<hr class="header">
+
+<h2>NAME</h2>
+<em><b>r.unpack.py</b></em>  - Imports a GRASS GIS specific raster archive file (packed with r.pack) as a raster map
+<h2>KEYWORDS</h2>
+<a href="raster.html">raster</a>, <a href="topic_import.html">import</a>, <a href="keywords.html#copying">copying</a>
+<h2>SYNOPSIS</h2>
+<div id="name"><b>r.unpack.py</b><br></div>
+<b>r.unpack.py --help</b><br>
+<div id="synopsis"><b>r.unpack.py</b> [-<b>op</b>] <b>input</b>=<em>name.pack</em>  [<b>output</b>=<em>name</em>]   [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
+</div>
+
+<div id="flags">
+<h3>Flags:</h3>
+<dl>
+<dt><b>-o</b></dt>
+<dd>Override projection check (use current projects's CRS)</dd>
+<dd>Assume that the dataset has same coordinate reference system as the current project</dd>
+
+<dt><b>-p</b></dt>
+<dd>Print projection information of input pack file and exit</dd>
+
+<dt><b>--overwrite</b></dt>
+<dd>Allow output files to overwrite existing files</dd>
+<dt><b>--help</b></dt>
+<dd>Print usage summary</dd>
+<dt><b>--verbose</b></dt>
+<dd>Verbose module output</dd>
+<dt><b>--quiet</b></dt>
+<dd>Quiet module output</dd>
+<dt><b>--ui</b></dt>
+<dd>Force launching GUI dialog</dd>
+</dl>
+</div>
+
+<div id="parameters">
+<h3>Parameters:</h3>
+<dl>
+<dt><b>input</b>=<em>name.pack</em>&nbsp;<b>[required]</b></dt>
+<dd>Name of input pack file</dd>
+
+<dt><b>output</b>=<em>name</em></dt>
+<dd>Name for output raster map (default: taken from input file internals)</dd>
+
+</dl>
+</div>
+<div class="toc">
+<h4 class="toc">Table of contents</h4>
+<ul class="toc">
+    <li class="toc"><a href="#description" class="toc">DESCRIPTION</a></li>
+    <li class="toc"><a href="#notes" class="toc">NOTES</a></li>
+    <li class="toc"><a href="#example" class="toc">EXAMPLE</a></li>
+    <li class="toc"><a href="#see-also" class="toc">SEE ALSO</a></li>
+    <li class="toc"><a href="#authors" class="toc">AUTHORS</a></li>
+</ul>
+</div>
+<h2><a name="description">DESCRIPTION</a></h2>
+
+<em>r.unpack</em> allows unpacking raster maps packed by <em><a href="r.pack.html">r.pack</a></em>.
+
+<h2><a name="notes">NOTES</a></h2>
+
+Name of the raster map is determined by default from pack file
+internals. Optionally the name can be given by <b>output</b> parameter.
+
+Currently only 2D raster maps are supported.
+
+<h2><a name="example">EXAMPLE</a></h2>
+
+Pack up raster map <i>aspect</i> into <i>aspect.pack</i> file.
+
+<div class="code"><pre>
+r.pack input=aspect
+</pre></div>
+
+the raster map can be afterwards unpacked by
+
+<div class="code"><pre>
+r.unpack input=aspect.pack
+</pre></div>
+
+<h2><a name="see-also">SEE ALSO</a></h2>
+
+<em>
+  <a href="r.pack.html">r.pack</a>,
+  <a href="r.in.gdal.html">r.in.gdal</a>,
+  <a href="v.pack.html">v.pack</a>
+</em>
+
+<h2><a name="authors">AUTHORS</a></h2>
+
+Original Bash script written by Hamish Bowman, Otago University, New Zealand as GRASS AddOns
+<br>
+Converted to Python and updated for GRASS 7 by Martin Landa, CTU in Prague, Czech Republic
+<h2>SOURCE CODE</h2>
+<p>
+  Available at:
+  <a href="https://github.com/OSGeo/grass/tree/main/scripts/r.unpack">r.unpack source code</a>
+  (<a href="https://github.com/OSGeo/grass/commits/main/scripts/r.unpack">history</a>)
+</p>
+<p>
+  Latest change: Friday May 03 14:49:35 2024 in commit: 763fa05e332664d1b5f883b4a26a81decf7757b3
+</p>
+<hr class="header">
+<p>
+<a href="index.html">Main index</a> |
+<a href="raster.html">Raster index</a> |
+<a href="topics.html">Topics index</a> |
+<a href="keywords.html">Keywords index</a> |
+<a href="graphical_index.html">Graphical index</a> |
+<a href="full_index.html">Full index</a>
+</p>
+<p>
+&copy; 2003-2025
+<a href="https://grass.osgeo.org">GRASS Development Team</a>,
+GRASS GIS 8.4.1 Reference Manual
+</p>
+
+</div>
+</body>
+</html>

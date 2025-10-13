@@ -1,0 +1,165 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+ <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+ <meta name="Author" content="GRASS Development Team">
+ <meta http-equiv="content-language" content="en-us">
+ <meta name="viewport" content="width=device-width, initial-scale=1">
+ <title>g.mkfontcap - GRASS GIS manual</title>
+ <meta name="description" content="g.mkfontcap: Generates the font configuration file by scanning various directories for fonts.">
+ <meta name="keywords" content="general">
+ <link rel="stylesheet" href="grassdocs.css" type="text/css">
+</head>
+<body bgcolor="white">
+<div id="container">
+
+<a href="index.html"><img src="grass_logo.png" alt="GRASS logo"></a>
+<script>
+// Create hamburger menu TOC HTML elements by the JavaScript
+let temp = document.createElement('template');
+const toc = '<ul class="toc-mobile-screen" id="toc-mobile-screen">' + 
+'<li><a class="toc-item" href="#description">DESCRIPTION</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#see-also">SEE ALSO</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#author">AUTHOR</a>' + 
+'</li>' +
+'<a class="close" href="#">' +
+'<img src="./hamburger_menu_close.svg" alt="close">' +
+'</a>' +
+'</ul>' +
+'<a class="hamburger" href="#toc-mobile-screen">' +
+'<img src="./hamburger_menu.svg" alt="menu">' +
+'</a>';
+temp.innerHTML = toc;
+const grassLogoLink = document.getElementsByTagName("img")[0];
+grassLogoLink.after(temp.content);
+</script>
+<hr class="header">
+
+<h2>NAME</h2>
+<em><b>g.mkfontcap</b></em>  - Generates the font configuration file by scanning various directories for fonts.
+<h2>KEYWORDS</h2>
+<a href="general.html">general</a>
+<h2>SYNOPSIS</h2>
+<div id="name"><b>g.mkfontcap</b><br></div>
+<b>g.mkfontcap --help</b><br>
+<div id="synopsis"><b>g.mkfontcap</b> [-<b>s</b>]  [<b>extradirs</b>=<em>string</em>]   [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
+</div>
+
+<div id="flags">
+<h3>Flags:</h3>
+<dl>
+<dt><b>-s</b></dt>
+<dd>Write font configuration file to standard output instead of $GISBASE/etc</dd>
+
+<dt><b>--help</b></dt>
+<dd>Print usage summary</dd>
+<dt><b>--verbose</b></dt>
+<dd>Verbose module output</dd>
+<dt><b>--quiet</b></dt>
+<dd>Quiet module output</dd>
+<dt><b>--ui</b></dt>
+<dd>Force launching GUI dialog</dd>
+</dl>
+</div>
+
+<div id="parameters">
+<h3>Parameters:</h3>
+<dl>
+<dt><b>extradirs</b>=<em>string</em></dt>
+<dd>List of extra directories to scan</dd>
+<dd>Comma-separated list of extra directories to scan for Freetype-compatible fonts as well as the defaults (see documentation)</dd>
+
+</dl>
+</div>
+<div class="toc">
+<h4 class="toc">Table of contents</h4>
+<ul class="toc">
+    <li class="toc"><a href="#description" class="toc">DESCRIPTION</a></li>
+    <li class="toc"><a href="#see-also" class="toc">SEE ALSO</a></li>
+    <li class="toc"><a href="#author" class="toc">AUTHOR</a></li>
+</ul>
+</div>
+<h2><a name="description">DESCRIPTION</a></h2>
+
+<em>g.mkfontcap</em> is a utility to generate a GRASS font configuration file
+("fontcap") containing details of the fonts available on the current system.
+If <a href="https://freetype.org/">Freetype</a> is not installed,
+the font list will be limited to the set of Hershey stroke fonts supplied
+with GRASS. With Freetype enabled however, the module will recursively scan
+all files within a predefined hierarchy to find Freetype-compatible scalable
+fonts. The list of directories scanned is currently:
+<div class="code"><pre>
+    /usr/lib/X11/fonts
+    /usr/share/X11/fonts
+    /usr/share/fonts
+    /usr/local/share/fonts
+    ${HOME}/Library/Fonts
+    /Library/Fonts
+    /System/Library/Fonts
+    ${WINDIR}/Fonts
+</pre></div>
+<p>These correspond to directories where fonts can be found on some common
+operating systems. Extra directories to search can easily by added using the
+<b>extradirs</b> parameter, which accepts a comma-separated list. An extra
+directory may optionally contain an environment variable <em>at the start</em>
+of the string, if enclosed in ${xxx} syntax (see examples above).
+
+<p>The module will normally write to the standard fontcap file location,
+<code>$GISBASE/etc/fontcap</code>. If the environment variable
+<code>GRASS_FONT_CAP</code> is set, the output will instead be written
+to the file specified by that variable. This is useful if you don't have
+permission to modify <code>$GISBASE/etc/fontcap</code>: in this case you can
+use e.g.
+
+<div class="code"><pre>
+# use local file version instead of system copy
+GRASS_FONT_CAP=$HOME/.gfontcap
+export GRASS_FONT_CAP
+
+g.mkfontcap
+</pre></div>
+<p>to create a personal copy and then to make GRASS use that file
+instead of the system copy.
+
+<p>The output list of fonts is sorted first by type (Stroke fonts first,
+followed by Freetype) and within each type by the short name of the font.
+
+<h2><a name="see-also">SEE ALSO</a></h2>
+
+
+<em>
+<a href="d.font.html">d.font</a>
+</em>
+
+<h2><a name="author">AUTHOR</a></h2>
+
+Paul Kelly
+<h2>SOURCE CODE</h2>
+<p>
+  Available at:
+  <a href="https://github.com/OSGeo/grass/tree/main/general/g.mkfontcap">g.mkfontcap source code</a>
+  (<a href="https://github.com/OSGeo/grass/commits/main/general/g.mkfontcap">history</a>)
+</p>
+<p>
+  Latest change: Tuesday Dec 17 20:17:20 2024 in commit: d962e90c026708a4815ea2b9f46c0e84c17de22d
+</p>
+<hr class="header">
+<p>
+<a href="index.html">Main index</a> |
+<a href="general.html">General index</a> |
+<a href="topics.html">Topics index</a> |
+<a href="keywords.html">Keywords index</a> |
+<a href="graphical_index.html">Graphical index</a> |
+<a href="full_index.html">Full index</a>
+</p>
+<p>
+&copy; 2003-2025
+<a href="https://grass.osgeo.org">GRASS Development Team</a>,
+GRASS GIS 8.4.1 Reference Manual
+</p>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,10 @@
+Mon Jun 23 15:45:10 2025
+dem_campania
+PERMANENT
+utente
+raster
+
+
+generato da r.in.gdal
+r.in.gdal -a -k input="C:\Users\utente\Documents\GitHub\RECMOP\grass\
+_gis\DEM.tif" output="dem_campania" memory=300 offset=0 num_digits=0

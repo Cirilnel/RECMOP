@@ -1,0 +1,25 @@
+Tue Jun 24 20:15:06 2025
+irradianza_258
+PERMANENT
+utente
+raster
+
+
+generato da r.sun
+ ----------------------------------------------------------------
+ Day [1-365]:                              258
+ Solar constant (W/m^2):                   1367.000000
+ Extraterrestrial irradiance (W/m^2):      1352.488857
+ Declination (rad):                        0.054367
+ Latitude min-max(deg):                    40.3361 - 40.3461
+ Sunrise time min-max (hr.):               5.82 - 5.82
+ Sunset time min-max (hr.):                18.18 - 18.18
+ Time step (hr.):                          0.5000
+ Linke turbidity factor:                   3.2
+ Ground albedo:                            0.200
+ -----------------------------------------------------------------
+
+r.sun --overwrite elevation="dem" aspect="aspect" aspect_value=270 s\
+lope="slope" slope_value=0.0 linke_value=3.25 albedo_value=0.2 glob_\
+rad="irradianza_258" day=258 step=0.5 solar_constant=1367 nprocs=1 d\
+istance_step=1.0 npartitions=1

@@ -1,0 +1,71 @@
+.TH g.download.location 1 "" "GRASS 8.4.1" "GRASS GIS User's Manual"
+.SH NAME
+\fI\fBg.download.location.py\fR\fR  \- Download GRASS project (location) from the web
+.br
+Get GRASS project from an URL or file path
+.SH KEYWORDS
+general, data, download, import
+.SH SYNOPSIS
+\fBg.download.location.py\fR
+.br
+\fBg.download.location.py \-\-help\fR
+.br
+\fBg.download.location.py\fR \fBurl\fR=\fIstring\fR  [\fBname\fR=\fIname\fR]   [\fBpath\fR=\fIpath\fR]   [\-\-\fBhelp\fR]  [\-\-\fBverbose\fR]  [\-\-\fBquiet\fR]  [\-\-\fBui\fR]
+.SS Flags:
+.IP "\fB\-\-help\fR" 4m
+.br
+Print usage summary
+.IP "\fB\-\-verbose\fR" 4m
+.br
+Verbose module output
+.IP "\fB\-\-quiet\fR" 4m
+.br
+Quiet module output
+.IP "\fB\-\-ui\fR" 4m
+.br
+Force launching GUI dialog
+.SS Parameters:
+.IP "\fBurl\fR=\fIstring\fR \fB[required]\fR" 4m
+.br
+URL of the archive with a project to be downloaded
+.br
+URL of ZIP, TAR.GZ, or other similar archive
+.IP "\fBname\fR=\fIname\fR" 4m
+.br
+Project (location) name
+.br
+Project name (not path to project)
+.IP "\fBpath\fR=\fIpath\fR" 4m
+.br
+GRASS GIS database directory
+.br
+Default: path to the current GRASS GIS database
+.SH DESCRIPTION
+\fIg.download.location\fR has been renamed to
+g.download.project
+and exists for backwards compatibility reasons.
+It will be removed in the next major version.
+.SH SEE ALSO
+\fI
+g.download.project
+\fR
+.SH AUTHOR
+Vaclav Petras, NCSU GeoForAll Lab
+.SH SOURCE CODE
+.PP
+Available at:
+g.download.location source code
+(history)
+.PP
+Latest change: Wednesday Aug 21 11:01:23 2024 in commit: b4fea09aae66acfd64509ba76d2eecded8123b5b
+.PP
+Main index |
+General index |
+Topics index |
+Keywords index |
+Graphical index |
+Full index
+.PP
+© 2003\-2025
+GRASS Development Team,
+GRASS GIS 8.4.1 Reference Manual

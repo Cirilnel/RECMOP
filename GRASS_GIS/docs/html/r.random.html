@@ -1,0 +1,345 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+ <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+ <meta name="Author" content="GRASS Development Team">
+ <meta http-equiv="content-language" content="en-us">
+ <meta name="viewport" content="width=device-width, initial-scale=1">
+ <title>r.random - GRASS GIS manual</title>
+ <meta name="description" content="r.random: Creates a raster map and vector point map containing randomly located cells and points.">
+ <meta name="keywords" content="raster, sampling, vector, random, level1">
+ <link rel="stylesheet" href="grassdocs.css" type="text/css">
+</head>
+<body bgcolor="white">
+<div id="container">
+
+<a href="index.html"><img src="grass_logo.png" alt="GRASS logo"></a>
+<script>
+// Create hamburger menu TOC HTML elements by the JavaScript
+let temp = document.createElement('template');
+const toc = '<ul class="toc-mobile-screen" id="toc-mobile-screen">' + 
+'<li><a class="toc-item" href="#description">DESCRIPTION</a>' + 
+'<ul>' + 
+'<li><a class="toc-item" href="#placement-of-cells-and-points">Placement of cells and points</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#number-of-cells-and-points">Number of cells and points</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#values">Values</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#vector-output">Vector output</a>' + 
+'</li>' + 
+'</ul></li>' + 
+'<li><a class="toc-item" href="#notes">NOTES</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#examples">EXAMPLES</a>' + 
+'<ul>' + 
+'<li><a class="toc-item" href="#random-2d-vector-elevation-points">Random 2D vector elevation points</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#random-3d-vector-elevation-points">Random 3D vector elevation points</a>' + 
+'</li>' + 
+'</ul></li>' + 
+'<li><a class="toc-item" href="#see-also">SEE ALSO</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#authors">AUTHORS</a>' + 
+'</li>' +
+'<a class="close" href="#">' +
+'<img src="./hamburger_menu_close.svg" alt="close">' +
+'</a>' +
+'</ul>' +
+'<a class="hamburger" href="#toc-mobile-screen">' +
+'<img src="./hamburger_menu.svg" alt="menu">' +
+'</a>';
+temp.innerHTML = toc;
+const grassLogoLink = document.getElementsByTagName("img")[0];
+grassLogoLink.after(temp.content);
+</script>
+<hr class="header">
+
+<h2>NAME</h2>
+<em><b>r.random</b></em>  - Creates randomly placed raster cells or vector points<BR>
+Creates a raster map and vector point map containing randomly located cells and points.
+<h2>KEYWORDS</h2>
+<a href="raster.html">raster</a>, <a href="topic_sampling.html">sampling</a>, <a href="keywords.html#vector">vector</a>, <a href="keywords.html#random">random</a>, <a href="keywords.html#level1">level1</a>
+<h2>SYNOPSIS</h2>
+<div id="name"><b>r.random</b><br></div>
+<b>r.random --help</b><br>
+<div id="synopsis"><b>r.random</b> [-<b>snzb</b>] <b>input</b>=<em>name</em>  [<b>cover</b>=<em>name</em>]  <b>npoints</b>=<em>number[%]</em>  [<b>raster</b>=<em>name</em>]   [<b>vector</b>=<em>name</em>]   [<b>seed</b>=<em>integer</em>]   [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
+</div>
+
+<div id="flags">
+<h3>Flags:</h3>
+<dl>
+<dt><b>-s</b></dt>
+<dd>Generate random seed (result is non-deterministic)</dd>
+
+<dt><b>-n</b></dt>
+<dd>Generate points also for NULL cells</dd>
+
+<dt><b>-z</b></dt>
+<dd>Generate vector points as 3D points</dd>
+<dd>Input raster values will be used for Z coordinates</dd>
+
+<dt><b>-b</b></dt>
+<dd>Do not build topology</dd>
+<dd>Do not build topology for vector points</dd>
+
+<dt><b>--overwrite</b></dt>
+<dd>Allow output files to overwrite existing files</dd>
+<dt><b>--help</b></dt>
+<dd>Print usage summary</dd>
+<dt><b>--verbose</b></dt>
+<dd>Verbose module output</dd>
+<dt><b>--quiet</b></dt>
+<dd>Quiet module output</dd>
+<dt><b>--ui</b></dt>
+<dd>Force launching GUI dialog</dd>
+</dl>
+</div>
+
+<div id="parameters">
+<h3>Parameters:</h3>
+<dl>
+<dt><b>input</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
+<dd>Name of input raster map</dd>
+
+<dt><b>cover</b>=<em>name</em></dt>
+<dd>Name of cover raster map</dd>
+
+<dt><b>npoints</b>=<em>number[%]</em>&nbsp;<b>[required]</b></dt>
+<dd>The number of points (or cells) to generate</dd>
+<dd>The number of vector points or raster cells to generate, possibly as a percentage of number of cells</dd>
+
+<dt><b>raster</b>=<em>name</em></dt>
+<dd>Name for output raster map</dd>
+
+<dt><b>vector</b>=<em>name</em></dt>
+<dd>Name for output vector map</dd>
+
+<dt><b>seed</b>=<em>integer</em></dt>
+<dd>Seed for rand() function</dd>
+
+</dl>
+</div>
+<div class="toc">
+<h4 class="toc">Table of contents</h4>
+<ul class="toc">
+    <li class="toc"><a href="#description" class="toc">DESCRIPTION</a>
+    <ul class="toc">
+        <li class="toc"><a href="#placement-of-cells-and-points" class="toc">Placement of cells and points</a></li>
+        <li class="toc"><a href="#number-of-cells-and-points" class="toc">Number of cells and points</a></li>
+        <li class="toc"><a href="#values" class="toc">Values</a></li>
+        <li class="toc"><a href="#vector-output" class="toc">Vector output</a></li>
+    </ul></li>
+    <li class="toc"><a href="#notes" class="toc">NOTES</a></li>
+    <li class="toc"><a href="#examples" class="toc">EXAMPLES</a>
+    <ul class="toc">
+        <li class="toc"><a href="#random-2d-vector-elevation-points" class="toc">Random 2D vector elevation points</a></li>
+        <li class="toc"><a href="#random-3d-vector-elevation-points" class="toc">Random 3D vector elevation points</a></li>
+    </ul></li>
+    <li class="toc"><a href="#see-also" class="toc">SEE ALSO</a></li>
+    <li class="toc"><a href="#authors" class="toc">AUTHORS</a></li>
+</ul>
+</div>
+<h2><a name="description">DESCRIPTION</a></h2>
+
+<p>
+The module <em>r.random</em> creates a raster map with values in random places.
+Alternatively, it creates random vector points at these places.
+Number of random cells or points can be a fixed number or a percentage of cells
+from the input.
+By default, generated cells or points will be subset of non-NULL cells of the input.
+Resulting raster map consists of original cell values at the selected
+random locations and NULL (no data) values elsewhere.
+
+<h3><a name="placement-of-cells-and-points">Placement of cells and points</a></h3>
+
+<p>
+The module allows the user to create a
+raster map and/or a vector points map containing
+coordinates of points whose locations have been randomly
+determined. The module places these randomly generated
+vector points within the current computational region and raster mask (if
+any), on non-NULL raster cells in a
+user-specified raster map. If the user sets the
+<b>-n</b> flag, points will be randomly generated across all
+cells (even those with NULL values).
+Cells in the resulting raster overlap with the cells of the input raster
+based on the current computational region.
+Points in the resulting vector map are placed in cell centers of these cells.
+
+<h3><a name="number-of-cells-and-points">Number of cells and points</a></h3>
+
+<p>The user may specify the quantity of random locations to be
+generated either as a <em>positive integer</em> (e.g., 10),
+or as a <em>percentage of the raster map's cells</em>
+(e.g., 10%, or 3.05%).  The number of cells considered for
+the percentage reflects whether or not the <b>-n</b> flag
+was given. Options are 0-100; fractions of percent may be
+stated as decimals (e.g., 66.67%, or 0.05%).
+
+<h3><a name="values">Values</a></h3>
+
+<p>The cell values and
+corresponding category names (if present) associated with the
+random point locations in the <em>input</em> map are
+assigned to the newly generated cells in the <em>raster</em> map.
+If the <b>-n</b> is specified, then a unique entry
+is made for the value used where the <em>input</em> was NULL.
+This value is at least 1 less than the smallest value in the
+<em>input</em> raster and is given a medium gray color.
+
+<p>
+If a <em>cover</em> raster map is specified, values are taken
+from the <em>cover</em> raster map instead of the <em>input</em> raster map.
+If a <em>cover</em> raster map is specified and the <em>cover</em> map
+contains NULL (no data) values, these points are suppressed in the
+resulting <em>vector</em> or <em>raster</em> map.
+
+<h3><a name="vector-output">Vector output</a></h3>
+
+<p>The <em>vector</em> file created by <em>r.random</em>
+contains vector points that represent the <em>center points</em> of the
+randomly generated cells.  A <em>value</em> attribute contains the cell value
+of the <em>input</em> raster (or the assigned value
+when <b>-n</b> is used).
+If a <em>cover</em> map is additionally specified, a second
+column  <em>covervalue</em> is populated with raster values from
+the <em>cover</em> map.
+
+<p>If the user sets the <b>-b</b> flag, vector points are written without
+topology to minimize the required resources. This is suitable input
+to <em>v.surf.rst</em> and other vector modules.
+
+<h2><a name="notes">NOTES</a></h2>
+
+To decide on the number
+of points <em>r.random</em> will create,
+use <em><a href="r.univar.html">r.univar</a></em>,
+<em><a href="g.region.html">g.region</a></em>, or
+<em><a href="r.report.html">r.report</a></em>.
+<em>r.univar</em> is the fastest way to obtain number of
+non-NULL cells and NULL cells in a raster map
+given the current computational region and raster mask:
+
+<div class="code"><pre>
+r.univar map=inputmap
+</pre></div>
+
+The text output contains total number of null and non-null cells
+(called <code>cells</code> in the machine-readable shell script style output),
+total null cells (<code>null_cells</code>),
+and number of non-null cells (<code>n</code>).
+
+Alternatively, you can use the following to examine the computational
+region and the raster map:
+
+<div class="code"><pre>
+g.region -p
+r.report map=inputmap units=c null="*" nsteps=1
+</pre></div>
+
+<p>To create random vector point locations within some, but not all,
+categories of a integer input raster map (aka CELL raster map),
+the user must first create a reclassified raster map
+of the original raster map (e.g., using the GRASS
+module <em><a href="r.reclass.html">r.reclass</a></em>)
+that contains only the desired categories,
+and then use the reclassed raster map as input to <em>r.random</em>.
+
+<h2><a name="examples">EXAMPLES</a></h2>
+
+<h3><a name="random-2d-vector-elevation-points">Random 2D vector elevation points</a></h3>
+
+Random vector elevation points sampled from elevation map in the
+North Carolina sample dataset region, result stored in 2D vector map:
+
+<div class="code"><pre>
+g.region raster=elevation -p
+r.random elevation vector=elevrand n=100
+v.db.select elevrand
+v.univar elevrand col=value type=point
+</pre></div>
+
+<h3><a name="random-3d-vector-elevation-points">Random 3D vector elevation points</a></h3>
+
+Random vector elevation points sampled from elevation map in the
+North Carolina sample dataset region with collocated values sampled from
+landuse map, result stored in 3D vector map:
+
+<div class="code"><pre>
+g.region raster=elevation -p
+r.random -z elevation cover=landclass96 vector=luserand3d n=100
+
+# data output (value: elevation, covervalue: landuse class):
+v.db.select luserand3d
+cat|value|covervalue
+1|111.229591|5
+2|71.093758|1
+3|122.51075|5
+4|146.17395|4
+...
+</pre></div>
+
+<h2><a name="see-also">SEE ALSO</a></h2>
+
+<ul>
+    <li>
+        <em><a href="g.region.html">g.region</a></em>
+        for setting the computational region and examining the total number of cells,
+    </li>
+    <li>
+        <em><a href="r.reclass.html">r.reclass</a></em>
+        for working only with subset of values in the raster map,
+    </li>
+    <li>
+        <em><a href="v.random.html">v.random</a></em>
+        for generating vector points without any involvement of raster data,
+    </li>
+    <li>
+        <em><a href="r.random.cells.html">r.random.cells</a></em>
+        for generating random cells with with spatial dependence (minimal distance),
+    </li>
+    <li>
+        <em><a href="r.surf.random.html">r.surf.random</a></em>
+        as an option for generating random cell values,
+    </li>
+    <li>
+        <em><a href="v.surf.rst.html">v.surf.rst</a></em>
+        as an option for creating a surface from sampled points.
+    </li>
+</ul>
+
+<h2><a name="authors">AUTHORS</a></h2>
+
+Dr. James Hinthorne,
+GIS Laboratory,
+Central Washington University
+<p>Modified for GRASS 5.0 by Eric G. Miller
+<p>Cover map support by Markus Neteler, 2007
+<h2>SOURCE CODE</h2>
+<p>
+  Available at:
+  <a href="https://github.com/OSGeo/grass/tree/main/raster/r.random">r.random source code</a>
+  (<a href="https://github.com/OSGeo/grass/commits/main/raster/r.random">history</a>)
+</p>
+<p>
+  Latest change: Tuesday Apr 23 10:45:15 2024 in commit: f8115df1219e784a7136e7609f4c9bb16d928e2f
+</p>
+<hr class="header">
+<p>
+<a href="index.html">Main index</a> |
+<a href="raster.html">Raster index</a> |
+<a href="topics.html">Topics index</a> |
+<a href="keywords.html">Keywords index</a> |
+<a href="graphical_index.html">Graphical index</a> |
+<a href="full_index.html">Full index</a>
+</p>
+<p>
+&copy; 2003-2025
+<a href="https://grass.osgeo.org">GRASS Development Team</a>,
+GRASS GIS 8.4.1 Reference Manual
+</p>
+
+</div>
+</body>
+</html>

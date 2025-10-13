@@ -1,0 +1,14 @@
+Mon Jun 23 15:13:41 2025
+irradianza_media_annua_MJ
+PERMANENT
+utente
+raster
+
+
+generato da r.series
+r.series --overwrite input="irradianza_globale_15,irradianza_globale\
+_45,irradianza_globale_74,irradianza_globale_105,irradianza_globale_\
+135,irradianza_globale_166,irradianza_globale_196,irradianza_globale\
+_227,irradianza_globale_258,irradianza_globale_288,irradianza_global\
+e_319,irradianza_globale_349" output="irradianza_media_annua_MJ" met\
+hod="average" nprocs=1 memory=300

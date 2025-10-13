@@ -1,0 +1,12 @@
+Tue Jun 24 20:15:54 2025
+irradianza_media_annua
+PERMANENT
+utente
+raster
+
+
+generato da r.series
+r.series --overwrite input="irradianza_15,irradianza_45,irradianza_7\
+4,irradianza_105,irradianza_135,irradianza_166,irradianza_196,irradi\
+anza_227,irradianza_258,irradianza_288,irradianza_319,irradianza_349\
+" output="irradianza_media_annua" method="average" nprocs=1 memory=300

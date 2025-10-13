@@ -1,0 +1,76 @@
+.TH d.background 1 "" "GRASS 8.4.1" "GRASS GIS User's Manual"
+.SH NAME
+\fI\fBd.background.py\fR\fR  \- Fills the graphics display frame with user defined color.
+.SH KEYWORDS
+display, graphics, background, fill, erase
+.SH SYNOPSIS
+\fBd.background.py\fR
+.br
+\fBd.background.py \-\-help\fR
+.br
+\fBd.background.py\fR \fBcolor\fR=\fIname\fR  [\-\-\fBhelp\fR]  [\-\-\fBverbose\fR]  [\-\-\fBquiet\fR]  [\-\-\fBui\fR]
+.SS Flags:
+.IP "\fB\-\-help\fR" 4m
+.br
+Print usage summary
+.IP "\fB\-\-verbose\fR" 4m
+.br
+Verbose module output
+.IP "\fB\-\-quiet\fR" 4m
+.br
+Quiet module output
+.IP "\fB\-\-ui\fR" 4m
+.br
+Force launching GUI dialog
+.SS Parameters:
+.IP "\fBcolor\fR=\fIname\fR \fB[required]\fR" 4m
+.br
+Background color
+.br
+Either a standard color name or R:G:B triplet
+.SH DESCRIPTION
+\fId.background\fR will fill the image (or generally display monitor)
+with a single color specified by the \fBcolor\fR option.
+.SH NOTES
+\fId.background\fR is a frontend to \fId.erase\fR and shares its limitations.
+Namely, it does not work with the wx monitors such as \fCd.mon wx0\fR.
+.SH EXAMPLES
+In this example, the \fIstreets_wake\fR map from the North Carolina sample
+dataset is displayed with custom background color (specified using HTML hex color code)
+using \fIcairo\fR display monitor (creates file called \fImap.png\fR):
+.br
+.nf
+\fC
+g.region vector=streets_wake
+d.mon cairo
+d.background color=#ADEFD1
+d.vect map=streets_wake color=#00203F legend_label=\(dqStreets\(dq
+d.legend.vect \-b at=70,30 title=\(dqWake County\(dq
+\fR
+.fi
+.PP
+Figure: Wake County street network with custom background color (North Carolina sample dataset)
+.SH SEE ALSO
+\fI
+d.erase
+\fR
+.SH AUTHOR
+Vaclav Petras, NCSU GeoForAll Lab
+.SH SOURCE CODE
+.PP
+Available at:
+d.background source code
+(history)
+.PP
+Latest change: Wednesday Apr 17 11:38:48 2024 in commit: af7aa6982f1bc0f006e95221291b5ca125abd1e6
+.PP
+Main index |
+Display index |
+Topics index |
+Keywords index |
+Graphical index |
+Full index
+.PP
+© 2003\-2025
+GRASS Development Team,
+GRASS GIS 8.4.1 Reference Manual

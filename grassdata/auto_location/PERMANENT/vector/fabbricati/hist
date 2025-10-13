@@ -1,0 +1,12 @@
+COMMAND: v.in.ogr --overwrite input="C:\Users\utente\Documents\GitHub\RECMOP\FABBRICATI\fabbricati_salerno_padula\fabbricati_salerno_padula.shp" output="fabbricati" min_area=0.0001 type="" snap=-1
+GISDBASE: C:\Users\utente\Documents\GitHub\RECMOP\grassdata
+LOCATION: tmp_v_import_location_DESKTOP_BM7C8KT_22416 MAPSET: PERMANENT USER: utente DATE: Mon Jun 30 16:10:41 2025
+-----------------------------------------------------
+4104 poligoni di input
+Area totale: 584152 (4159 aree)
+Area di sovrapposizione: 219.695 (3 aree)
+Aree senza categoria: 21722.7 (53 aree)
+---------------------------------------------------------------------------------
+COMMAND: v.proj --overwrite project="tmp_v_import_location_DESKTOP_BM7C8KT_22416" mapset="PERMANENT" input="fabbricati" smax=10000
+GISDBASE: C:\Users\utente\Documents\GitHub\RECMOP\grassdata
+LOCATION: auto_location MAPSET: PERMANENT USER: utente DATE: Mon Jun 30 16:10:43 2025

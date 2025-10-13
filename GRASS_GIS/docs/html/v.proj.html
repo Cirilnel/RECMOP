@@ -1,0 +1,262 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+ <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+ <meta name="Author" content="GRASS Development Team">
+ <meta http-equiv="content-language" content="en-us">
+ <meta name="viewport" content="width=device-width, initial-scale=1">
+ <title>v.proj - GRASS GIS manual</title>
+ <meta name="description" content="v.proj: Re-projects a vector map from one project to the current project.">
+ <meta name="keywords" content="vector, projection, transformation, import">
+ <link rel="stylesheet" href="grassdocs.css" type="text/css">
+</head>
+<body bgcolor="white">
+<div id="container">
+
+<a href="index.html"><img src="grass_logo.png" alt="GRASS logo"></a>
+<script>
+// Create hamburger menu TOC HTML elements by the JavaScript
+let temp = document.createElement('template');
+const toc = '<ul class="toc-mobile-screen" id="toc-mobile-screen">' + 
+'<li><a class="toc-item" href="#description">DESCRIPTION</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#notes">NOTES</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#example">EXAMPLE</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#references">REFERENCES</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#see-also">SEE ALSO</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#authors">AUTHORS</a>' + 
+'</li>' +
+'<a class="close" href="#">' +
+'<img src="./hamburger_menu_close.svg" alt="close">' +
+'</a>' +
+'</ul>' +
+'<a class="hamburger" href="#toc-mobile-screen">' +
+'<img src="./hamburger_menu.svg" alt="menu">' +
+'</a>';
+temp.innerHTML = toc;
+const grassLogoLink = document.getElementsByTagName("img")[0];
+grassLogoLink.after(temp.content);
+</script>
+<hr class="header">
+
+<h2>NAME</h2>
+<em><b>v.proj</b></em>  - Re-projects a vector map from one project to the current project.
+<h2>KEYWORDS</h2>
+<a href="vector.html">vector</a>, <a href="topic_projection.html">projection</a>, <a href="keywords.html#transformation">transformation</a>, <a href="keywords.html#import">import</a>
+<h2>SYNOPSIS</h2>
+<div id="name"><b>v.proj</b><br></div>
+<b>v.proj --help</b><br>
+<div id="synopsis"><b>v.proj</b> [-<b>lzwb</b>] <b>project</b>=<em>name</em>  [<b>mapset</b>=<em>name</em>]   [<b>input</b>=<em>name</em>]   [<b>dbase</b>=<em>path</em>]   [<b>smax</b>=<em>float</em>]   [<b>output</b>=<em>name</em>]   [<b>pipeline</b>=<em>string</em>]   [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
+</div>
+
+<div id="flags">
+<h3>Flags:</h3>
+<dl>
+<dt><b>-l</b></dt>
+<dd>List vector maps in input mapset and exit</dd>
+
+<dt><b>-z</b></dt>
+<dd>Assume z coordinate is ellipsoidal height and transform if possible</dd>
+<dd>3D vector maps only</dd>
+
+<dt><b>-w</b></dt>
+<dd>Disable wrapping to -180,180 for latlon output</dd>
+<dd>Latlon output only, default is -180,180</dd>
+
+<dt><b>-b</b></dt>
+<dd>Do not build vector topology</dd>
+<dd>Recommended for massive point projection</dd>
+
+<dt><b>--overwrite</b></dt>
+<dd>Allow output files to overwrite existing files</dd>
+<dt><b>--help</b></dt>
+<dd>Print usage summary</dd>
+<dt><b>--verbose</b></dt>
+<dd>Verbose module output</dd>
+<dt><b>--quiet</b></dt>
+<dd>Quiet module output</dd>
+<dt><b>--ui</b></dt>
+<dd>Force launching GUI dialog</dd>
+</dl>
+</div>
+
+<div id="parameters">
+<h3>Parameters:</h3>
+<dl>
+<dt><b>project</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
+<dd>Project (location) containing input vector map</dd>
+<dd>Project name (not path to project)</dd>
+
+<dt><b>mapset</b>=<em>name</em></dt>
+<dd>Mapset containing input vector map</dd>
+<dd>Default: name of current mapset</dd>
+
+<dt><b>input</b>=<em>name</em></dt>
+<dd>Name of input vector map to re-project</dd>
+
+<dt><b>dbase</b>=<em>path</em></dt>
+<dd>Path to GRASS database of input project</dd>
+<dd>Default: path to the current GRASS GIS database</dd>
+
+<dt><b>smax</b>=<em>float</em></dt>
+<dd>Maximum segment length in meters in output vector map</dd>
+<dd>Increases accuracy of reprojected shapes, disable with smax=0</dd>
+<dd>Default: <em>10000</em></dd>
+
+<dt><b>output</b>=<em>name</em></dt>
+<dd>Name for output vector map (default: input)</dd>
+
+<dt><b>pipeline</b>=<em>string</em></dt>
+<dd>PROJ pipeline for coordinate transformation</dd>
+
+</dl>
+</div>
+<div class="toc">
+<h4 class="toc">Table of contents</h4>
+<ul class="toc">
+    <li class="toc"><a href="#description" class="toc">DESCRIPTION</a></li>
+    <li class="toc"><a href="#notes" class="toc">NOTES</a></li>
+    <li class="toc"><a href="#example" class="toc">EXAMPLE</a></li>
+    <li class="toc"><a href="#references" class="toc">REFERENCES</a></li>
+    <li class="toc"><a href="#see-also" class="toc">SEE ALSO</a></li>
+    <li class="toc"><a href="#authors" class="toc">AUTHORS</a></li>
+</ul>
+</div>
+<h2><a name="description">DESCRIPTION</a></h2>
+
+<em>v.proj</em> allows a user to convert a vector map in a specified mapset
+of a specified project (different from current) with coordinate reference
+system (CRS) of source project to the vector map in a current mapset of current
+project with CRS of current project (both CRSs are defined in their
+corresponding projects). The CRS information can be viewed and managed with
+<em><a href="g.proj.html">g.proj</a></em>.
+
+<p>
+For an introduction to map CRSs (and the PROJ library), see the manual page of
+<a href="r.proj.html">r.proj</a>.
+
+<h2><a name="notes">NOTES</a></h2>
+
+If <b>output</b> is not specified it is set to be the same as input map
+name.
+
+<br>
+If <b>mapset</b> is not specified, its name is assumed to be the same
+as the current mapset's name.
+
+<br>
+If <b>dbase</b> is not specified it is assumed to be the current
+database. The user only has to specify <b>dbase</b> if the source
+project is stored in another separate GRASS database.
+
+<br>
+If <b>smax</b> is set to <b>0</b> the automated vertex densification is
+disabled (not recommended).
+
+<p>
+<em>v.proj</em> supports general datum transformations, making use of the
+<em>PROJ</em> co-ordinate system translation library.
+
+<p>When projecting into a latlon project, east coordinates are wrapped
+by the proj4 library to fit into the range -180,180. This is in most cases
+appropriate, but can cause errors the input vector crosses the datum line
+at 180E/W. In this case wrapping of east coordinates to -180,180 needs
+to be disabled with the <b>-w</b> flag.
+
+<p>When reprojecting massive point clouds for which topology is not necessary,
+the user can set the <b>-b</b> flag to suppress the building of topology of
+the output map.
+
+<p>
+In order to preserve spatial detail, <em>v.proj</em> performs automated
+vertex densification (as an alternative, <em><a href="v.split.html">v.split</a></em>
+could be used before reprojecting. Without vertex densification, depending on
+the source and target CRS (Coordinate Reference System), geometries can be
+substantially deformed (straight lines become curves, squares become
+trapezoids, etc). The densification of linear features can help to avoid
+topological errors.
+
+<h2><a name="example">EXAMPLE</a></h2>
+
+Reprojection of a vector map from another project (and mapset) into the current mapset:
+
+<div class="code"><pre>
+v.proj in=mymap project=latlong mapset=user1
+</pre></div>
+
+<h2><a name="references">REFERENCES</a></h2>
+
+<ol>
+  <li> Evenden, G.I.  (1990) <a href="https://proj.org">Cartographic
+      projection procedures for the UNIX environment - a user's manual.</a>
+    USGS Open-File Report 90-284 (OF90-284.pdf)
+    See also there: Interim Report and 2nd Interim Report on Release 4, Evenden 1994).</li>
+  <li> Richards, John A. (1993), Remote Sensing Digital Image Analysis,
+    Springer-Verlag, Berlin, 2nd edition.</li>
+</ol>
+
+<a href="https://proj.org">PROJ</a>: Projection/datum support library.
+
+<p>
+<b>Further reading</b>
+<ul>
+  <li> <a href="https://www.asprs.org/asprs-publications/grids-and-datums">ASPRS Grids and Datum</a></li>
+  <li> <a href="http://geotiff.maptools.org/proj_list/">Projections Transform List</a> (PROJ)</li>
+  <li> <a href="https://proj.org/operations/index.html">Coordinate operations</a> by PROJ (projections, conversions, transformations, pipeline operator)</li>
+  <li> <a href="https://mapref.org">MapRef -
+      The Collection of Map Projections and Reference Systems for Europe</a></li>
+  <li> <a href="https://www.crs-geo.eu">Information and Service System for European Coordinate Reference Systems - CRS</a></li>
+</ul>
+
+<h2><a name="see-also">SEE ALSO</a></h2>
+
+<em>
+<a href="g.proj.html">g.proj</a>,
+<a href="m.proj.html">m.proj</a>,
+<a href="r.proj.html">r.proj</a>,
+<a href="i.rectify.html">i.rectify</a>,
+<a href="r.stats.html">r.stats</a>,
+<a href="v.sample.html">v.sample</a>,
+<a href="v.split.html">v.split</a>,
+<a href="v.surf.idw.html">v.surf.idw</a>,
+<a href="v.surf.rst.html">v.surf.rst</a>
+</em>
+
+<h2><a name="authors">AUTHORS</a></h2>
+
+Irina Kosinovsky, US ARMY CERL
+<br>
+M.L. Holko, USDA, SCS, NHQ-CGIS
+<br>
+R.L. Glenn, USDA, SCS, NHQ-CGIS
+<h2>SOURCE CODE</h2>
+<p>
+  Available at:
+  <a href="https://github.com/OSGeo/grass/tree/main/vector/v.proj">v.proj source code</a>
+  (<a href="https://github.com/OSGeo/grass/commits/main/vector/v.proj">history</a>)
+</p>
+<p>
+  Latest change: Tuesday Dec 17 20:17:20 2024 in commit: d962e90c026708a4815ea2b9f46c0e84c17de22d
+</p>
+<hr class="header">
+<p>
+<a href="index.html">Main index</a> |
+<a href="vector.html">Vector index</a> |
+<a href="topics.html">Topics index</a> |
+<a href="keywords.html">Keywords index</a> |
+<a href="graphical_index.html">Graphical index</a> |
+<a href="full_index.html">Full index</a>
+</p>
+<p>
+&copy; 2003-2025
+<a href="https://grass.osgeo.org">GRASS Development Team</a>,
+GRASS GIS 8.4.1 Reference Manual
+</p>
+
+</div>
+</body>
+</html>
