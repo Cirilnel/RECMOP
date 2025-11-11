@@ -1,9 +1,0 @@
-Mon Jun 23 17:26:05 2025
-irradianza_annua_kwh
-PERMANENT
-utente
-raster
-
-
-generato da r.mapcalc
-irradianza_media_giornaliera * 365 / 1000

@@ -1,8 +1,0 @@
-COMMAND: v.in.ogr --overwrite input="C:\Users\utente\AppData\Local\Temp\tmpwwr252jw\vector_reprojected.shp" output="fabbricati_domanda" min_area=0.0001 type="" snap=-1
-GISDBASE: C:\Users\utente\Documents\grassdata
-LOCATION: auto_location MAPSET: PERMANENT USER: utente DATE: Mon Jun 23 15:45:12 2025
------------------------------------------------------
-4104 poligoni di input
-Area totale: 584152 (4159 aree)
-Area di sovrapposizione: 219.695 (3 aree)
-Aree senza categoria: 21722.7 (53 aree)
